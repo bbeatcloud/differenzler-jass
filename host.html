@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Host Kontrollblatt - Srv-Differenzler-01</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { background-color: #f0fdf4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 24px; margin: 0; color: #14532d; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 24px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #dcfce7; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px; }
+        .title { font-size: 28px; font-weight: 900; margin: 0; color: #14532d; }
+        .subtitle { font-size: 13px; color: #6b7280; margin: 4px 0 0 0; }
+        
+        .btn-group { display: flex; gap: 12px; background: #f9fafb; padding: 8px; border-radius: 12px; border: 1px solid #e5e7eb; }
+        button { padding: 12px 24px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; font-size: 15px; }
+        #btn-host-frei { background-color: #166534; color: white; }
+        #btn-host-sperren { background-color: #dc2626; color: white; }
+        .btn-inactive { opacity: 0.3; }
+        .btn-active { box-shadow: 0 0 0 4px rgba(22, 101, 52, 0.4); transform: scale(1.02); font-weight: 900; }
+        .btn-active-red { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.4); transform: scale(1.02); font-weight: 900; }
+        
+        .lobby-bar { display: grid; grid-template-columns: 1fr 3fr; gap: 16px; margin-bottom: 24px; }
+        .code-box { background: linear-gradient(135deg, #166534, #064e3b); color: white; padding: 16px; border-radius: 12px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+        .code-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; font-weight: bold; }
+        .code-value { font-size: 28px; font-weight: 900; letter-spacing: 2px; }
+        
+        .slots-box { background: #f9fafb; border: 1px solid #e5e7eb; padding: 16px; border-radius: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .slot { background: white; border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
+        .slot-active { background-color: #f0fdf4; border-color: #bbf7d0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .dot { width: 12px; height: 12px; border-radius: 50%; background-color: #d1d5db; }
+        .dot-active { background-color: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        .slot-lbl { font-size: 10px; text-transform: uppercase; color: #9ca3af; font-weight: bold; display: block; }
+        .slot-name { font-size: 14px; font-weight: bold; color: #374151; }
+        .slot-name-active { color: #166534; font-weight: 900; }
+        
+        .passe-box { border: 2px solid #e5e7eb; padding: 16px; border-radius: 16px; background: white; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .passe-box-active { border-color: #22c55e; box-shadow: 0 0 0 4px #dcfce7; }
+        .passe-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .passe-title { font-size: 18px; font-weight: 900; color: #166534; margin: 0; }
+        .badge { background: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 99px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        
+        table { width: 100%; border-collapse: collapse; text-align: center; border-radius: 8px; overflow: hidden; margin-bottom: 8px; font-size: 14px; }
+        th, td { border: 1px solid #e5e7eb; padding: 8px; }
+        th { background-color: #111827; color: white; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sub-th { background-color: #f3f4f6; color: #4b5563; font-size: 10px; }
+        .player-row td { font-weight: 500; }
+        .player-name-cell { font-weight: bold; text-align: left; padding-left: 12px; background: #f9fafb; color: #374151; }
+        .diff-cell { font-weight: bold; background-color: #fef9c3; color: #713f12; }
+        .total-cell { font-weight: bold; background-color: #f3f4f6; }
+        
+        .total-row { background-color: #f3f4f6; font-weight: bold; color: #1f2937; }
+        .sum-actual-cell { font-size: 14px; font-weight: 900; }
+        .sum-red { background-color: #fca5a5 !important; color: #991b1b !important; animation: pulse 1.5s infinite; }
+        .sum-green { background-color: #dcfce7 !important; color: #166534 !important; }
+        
+        .rangliste { background: linear-gradient(to bottom, #f9fafb, #f3f4f6); padding: 20px; border-radius: 16px; border: 2px solid #e5e7eb; margin-top: 32px; }
+        .rl-title-box { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .rl-table th { background-color: #111827; }
+        .rl-total { background-color: #eab308 !important; font-size: 18px; font-weight: 900; color: black; }
+        .podium { background-color: #ecfdf5; font-weight: bold; }
+        
+        .next-btn-box { text-align: center; margin-top: 24px; }
+        .btn-next { background-color: #166534; color: white; padding: 14px 40px; font-size: 18px; font-weight: 900; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); cursor: pointer; }
+        .btn-next:hover { background-color: #14532d; }
+        
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1 class="title">Differenzler-Jass Kontrollblatt</h1>
+                <p class="subtitle">Zentrale Steuerung & Auswertung — Srv-Differenzler-01</p>
+            </div>
+            <div class="btn-group">
+                <button id="btn-host-frei" onclick="setHostState('Frei')">Host Frei</button>
+                <button id="btn-host-sperren" onclick="setHostState('Sperren')">Host sperren</button>
+            </div>
+        </div>
+
+        <!-- Action Bar: Reset & Neue Cloud/Export Funktionen -->
+        <div style="margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="resetTable()" style="background-color: #b91c1c; color: white; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer;">Tisch zurücksetzen</button>
+            <button onclick="exportTableToCSV()" style="background-color: #2b8a3e; color: white; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer;">📥 Als Excel/CSV exportieren</button>
+            <button onclick="saveToMongoDB()" style="background-color: #1c7ed6; color: white; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer;">☁️ In Datenbank speichern</button>
+        </div>
+
+        <div class="lobby-bar">
+            <div class="code-box">
+                <span class="code-title">Raum-Code</span>
+                <span class="code-value" id="host-room-code">JASS</span>
+            </div>
+            <div class="slots-box">
+                <div class="slot" id="slot-Spieler1"><span class="dot" id="dot-Spieler1"></span><div><span class="slot-lbl">Spieler 1</span><span class="slot-name" id="name-Spieler1">Warten...</span></div></div>
+                <div class="slot" id="slot-Spieler2"><span class="dot" id="dot-Spieler2"></span><div><span class="slot-lbl">Spieler 2</span><span class="slot-name" id="name-Spieler2">Warten...</span></div></div>
+                <div class="slot" id="slot-Spieler3"><span class="dot" id="dot-Spieler3"></span><div><span class="slot-lbl">Spieler 3</span><span class="slot-name" id="name-Spieler3">Warten...</span></div></div>
+                <div class="slot" id="slot-Spieler4"><span class="dot" id="dot-Spieler4"></span><div><span class="slot-lbl">Spieler 4</span><span class="slot-name" id="name-Spieler4">Warten...</span></div></div>
+            </div>
+        </div>
+
+        <!-- Jass-Tabellen -->
+        <div id="passen-container"></div>
+
+        <!-- Rangliste -->
+        <div class="rangliste">
+            <div class="rl-title-box">
+                <span style="font-size: 24px;">🏆</span>
+                <h2 style="margin:0; font-size:22px; font-weight:900;">Aktuelle Rangliste</h2>
+            </div>
+            <table class="rl-table">
+                <thead>
+                    <tr>
+                        <th>Rang</th>
+                        <th style="text-align: left; padding-left:12px;">Spieler</th>
+                        <th>Passe 1</th>
+                        <th>Passe 2</th>
+                        <th>Passe 3</th>
+                        <th>Passe 4</th>
+                        <th style="background-color: #eab308; color: black;">Total</th>
+                    </tr>
+                </thead>
+                <tbody id="rangliste-body"></tbody>
+            </table>
+        </div>
+
+        <!-- Weiter-Button -->
+        <div class="next-btn-box">
+            <button class="btn-next" onclick="nextStep()">Nächstes Spiel freischalten ➔</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let currentPlayers = {};
+        let currentGameState = null;
+
+        socket.on('init', (data) => {
+            currentPlayers = data.players || {};
+            currentGameState = data.gameState;
+            updateLobbyStatus(currentPlayers);
+            renderAll();
+            handleHostState(data.hostState);
+        });
+
+        socket.on('host_state_changed', handleHostState);
+        
+        socket.on('game_state_updated', (state) => { 
+            currentGameState = state;
+            renderAll(); 
+        });
+        
+        socket.on('players_updated', (p) => { 
+            currentPlayers = p || {}; 
+            updateLobbyStatus(currentPlayers);
+            renderAll();
+        });
+
+        function setHostState(s) { socket.emit('toggle_host', s); }
+        function nextStep() { socket.emit('next_step'); }
+        function resetTable() {
+            if(confirm("Möchtest du wirklich alle Spieler vom Tisch entfernen?")) {
+                socket.emit('reset_table');
+            }
+        }
+
+        // --- NEUE FUNKTIONEN: EXCEL/CSV EXPORT & MONGODB SAVE ---
+        function exportTableToCSV(filename = 'jass_spielstand.csv') {
+            let csv = [];
+            const rows = document.querySelectorAll("table tr");
+            
+            for (let i = 0; i < rows.length; i++) {
+                let row = [], cols = rows[i].querySelectorAll("td, th");
+                for (let j = 0; j < cols.length; j++) {
+                    row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+                }
+                csv.push(row.join(";")); // Semikolon für Schweizer / Deutsches Excel
+            }
+
+            const csvFile = new Blob(["\ufeff" + csv.join("\n")], { type: "text/csv;charset=utf-8;" });
+            const downloadLink = document.createElement("a");
+            downloadLink.download = filename;
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = "none";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        function saveToMongoDB() {
+            fetch('/api/games/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert("✅ " + data.message);
+                } else {
+                    alert("❌ Fehler: " + data.error);
+                }
+            })
+            .catch(err => {
+                console.error('Fehler:', err);
+                alert("❌ Verbindung zum Server fehlgeschlagen.");
+            });
+        }
+        // --------------------------------------------------------
+
+        function updateLobbyStatus(players) {
+            for(let i = 1; i <= 4; i++) {
+                const nameEl = document.getElementById(`name-Spieler${i}`);
+                const dotEl = document.getElementById(`dot-Spieler${i}`);
+                const slotEl = document.getElementById(`slot-Spieler${i}`);
+                if(nameEl) {
+                    nameEl.innerText = "Warten...";
+                    nameEl.className = "slot-name";
+                }
+                if(dotEl) dotEl.className = "dot";
+                if(slotEl) slotEl.className = "slot";
+            }
+
+            if(!players) return;
+            for(let id in players) {
+                const pos = players[id].position;
+                const name = players[id].name;
+                const nameEl = document.getElementById(`name-${pos}`);
+                const dotEl = document.getElementById(`dot-${pos}`);
+                const slotEl = document.getElementById(`slot-${pos}`);
+                
+                if(nameEl) {
+                    nameEl.innerText = name;
+                    nameEl.className = "slot-name slot-name-active";
+                    if(dotEl) dotEl.className = "dot dot-active";
+                    if(slotEl) slotEl.className = "slot slot-active";
+                }
+            }
+        }
+
+        function handleHostState(state) {
+            const btnFrei = document.getElementById('btn-host-frei');
+            const btnSperren = document.getElementById('btn-host-sperren');
+            if(state === "Frei") {
+                btnFrei.className = "btn-active";
+                btnSperren.className = "btn-inactive";
+            } else {
+                btnFrei.className = "btn-inactive";
+                btnSperren.className = "btn-active-red";
+            }
+        }
+
+        function renderAll() {
+            if(!currentGameState) return;
+            const container = document.getElementById('passen-container');
+            container.innerHTML = "";
+            let names = { Spieler1: "Spieler 1", Spieler2: "Spieler 2", Spieler3: "Spieler 3", Spieler4: "Spieler 4" };
+            for(let id in currentPlayers) { names[currentPlayers[id].position] = currentPlayers[id].name; }
+
+            for (let p = 1; p <= 4; p++) {
+                let isPasseAktiv = currentGameState.currentPasse === p;
+                let activeClass = isPasseAktiv ? 'passe-box-active' : '';
+                
+                let html = `
+                <div class="passe-box ${activeClass}">
+                    <div class="passe-header">
+                        <h3 class="passe-title">Passe ${p}</h3>
+                        ${isPasseAktiv ? '<span class="badge">Aktive Passe</span>' : ''}
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="width: 16%;">Spieler</th>
+                                <th colspan="3">Spiel 1</th>
+                                <th colspan="3">Spiel 2</th>
+                                <th colspan="3">Spiel 3</th>
+                                <th colspan="3">Spiel 4</th>
+                                <th rowspan="2" style="width: 8%;">Total</th>
+                            </tr>
+                            <tr>
+                                <th class="sub-th">Gesch.</th><th class="sub-th">Spiel</th><th class="sub-th">Diff.</th>
+                                <th class="sub-th">Gesch.</th><th class="sub-th">Spiel</th><th class="sub-th">Diff.</th>
+                                <th class="sub-th">Gesch.</th><th class="sub-th">Spiel</th><th class="sub-th">Diff.</th>
+                                <th class="sub-th">Gesch.</th><th class="sub-th">Spiel</th><th class="sub-th">Diff.</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                let passeTotals = { Spieler1: 0, Spieler2: 0, Spieler3: 0, Spieler4: 0 };
+
+                for (let pos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) {
+                    html += `<tr class="player-row"><td class="player-name-cell">${names[pos]}</td>`;
+                    for (let s = 1; s <= 4; s++) {
+                        let cell = currentGameState.matrix[p][s];
+                        let est = cell.estimates[pos] !== null ? (cell.hidden[pos] ? "OK" : cell.estimates[pos]) : "";
+                        let act = cell.actual[pos] !== null ? cell.actual[pos] : "";
+                        let diff = cell.diff[pos] !== null ? cell.diff[pos] : "";
+                        
+                        if(!cell.hidden[pos] && cell.diff[pos] !== null) { passeTotals[pos] += cell.diff[pos]; }
+
+                        html += `<td>${est}</td><td>${act}</td><td class="diff-cell">${diff}</td>`;
+                    }
+                    html += `<td class="total-cell">${passeTotals[pos]}</td></tr>`;
+                }
+
+                html += `<tr class="total-row"><td>Total</td>`;
+                for (let s = 1; s <= 4; s++) {
+                    let sumAct = 0;
+                    let hasData = false;
+
+                    for (let pos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) { 
+                        if (currentGameState.matrix[p][s].actual[pos] !== null) {
+                            sumAct += currentGameState.matrix[p][s].actual[pos];
+                            hasData = true;
+                        }
+                    }
+
+                    let isRed = sumAct !== 157 && hasData; 
+                    let cl = isRed ? 'sum-actual-cell sum-red' : (hasData ? 'sum-actual-cell sum-green' : '');
+
+                    html += `<td colspan="2" class="${cl}">${hasData ? sumAct : ''}</td><td style="background-color: #f3f4f6;"></td>`;
+                }
+                html += `<td style="background-color: #e5e7eb;"></td></tr></tbody></table></div>`;
+                container.innerHTML += html;
+            }
+
+            const rlBody = document.getElementById('rangliste-body');
+            rlBody.innerHTML = "";
+            let finalScores = ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4'].map(pos => {
+                let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
+                for(let i=1; i<=4; i++) p1 += currentGameState.matrix[1][i].diff[pos] || 0;
+                for(let i=1; i<=4; i++) p2 += currentGameState.matrix[2][i].diff[pos] || 0;
+                for(let i=1; i<=4; i++) p3 += currentGameState.matrix[3][i].diff[pos] || 0;
+                for(let i=1; i<=4; i++) p4 += currentGameState.matrix[4][i].diff[pos] || 0;
+                return { name: names[pos], p1, p2, p3, p4, total: (p1+p2+p3+p4) };
+            });
+
+            finalScores.sort((a, b) => a.total - b.total);
+            finalScores.forEach((row, idx) => {
+                let podiumClass = idx === 0 ? 'podium' : '';
+                rlBody.innerHTML += `
+                    <tr class="${podiumClass}">
+                        <td style="font-weight:900;">${idx + 1}. Rang</td>
+                        <td style="text-align: left; padding-left:12px; font-weight:bold;">${row.name}</td>
+                        <td>${row.p1}</td>
+                        <td>${row.p2}</td>
+                        <td>${row.p3}</td>
+                        <td>${row.p4}</td>
+                        <td class="rl-total">${row.total}</td>
+                    </tr>`;
+            });
+        }
+    </script>
+</body>
+</html>

@@ -3,14 +3,71 @@ const http = require('http');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const PORT = 4000;
+// JSON Parsing für API Endpunkte aktivieren
+app.use(express.json());
+app.use(express.static('public'));
+
+const PORT = process.env.PORT || 4000;
 const ROOM_CODE = "JASS"; 
 
+// --- MONGODB ATLAS VERBINDUNG & SCHEMA ---
+const MONGO_URI = process.env.MONGO_URI;
+
+if (MONGO_URI) {
+  mongoose.connect(MONGO_URI)
+    .then(() => console.log('✅ Erfolgreich mit MongoDB Atlas verbunden!'))
+    .catch(err => console.error('❌ Fehler bei MongoDB-Verbindung:', err));
+} else {
+  console.warn('⚠️ Keine MONGO_URI Umgebungsvariable gesetzt. Cloud-Speicherung deaktiviert.');
+}
+
+const gameRecordSchema = new mongoose.Schema({
+  createdAt: { type: Date, default: Date.now },
+  roomCode: { type: String, default: "JASS" },
+  players: Object,
+  gameState: Object
+});
+
+const GameRecord = mongoose.model('GameRecord', gameRecordSchema);
+
+// --- API ENDPUNKTE FÜR DIE HISTORIE ---
+app.get('/host', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'host.html'));
+});
+
+// Spielstand manuell oder automatisch in MongoDB speichern
+app.post('/api/games/save', async (req, res) => {
+    try {
+        const record = new GameRecord({
+            roomCode: ROOM_CODE,
+            players: players,
+            gameState: gameState
+        });
+        await record.save();
+        res.json({ success: true, message: 'Spielstand erfolgreich in MongoDB gespeichert!' });
+    } catch (err) {
+        console.error('Fehler beim Speichern in MongoDB:', err);
+        res.status(500).json({ success: false, error: 'Speichern fehlgeschlagen' });
+    }
+});
+
+// Die letzten gespielten Partien auslesen
+app.get('/api/games/history', async (req, res) => {
+    try {
+        const games = await GameRecord.find().sort({ createdAt: -1 }).limit(20);
+        res.json(games);
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Historie konnte nicht geladen werden' });
+    }
+});
+
+// --- SPIEL-STATUS & VARIABLEN ---
 let hostState = "Frei"; 
 let players = {}; // Map: token -> { name, position, socketId }
 
@@ -33,12 +90,7 @@ let gameState = {
     )
 };
 
-app.use(express.static('public'));
-
-app.get('/host', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'host.html'));
-});
-
+// Lokales Loggen (Fehlerfrei auf Linux/Render abgefangen)
 function writeLog(playerName, p, s, feld, wert) {
     try {
         const today = new Date();
@@ -46,7 +98,10 @@ function writeLog(playerName, p, s, feld, wert) {
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         
-        const logDir = path.join('C:', 'Users', 'Public', 'Documents', 'differenzler-jass', 'Log');
+        const logDir = process.platform === 'win32' 
+            ? path.join('C:', 'Users', 'Public', 'Documents', 'differenzler-jass', 'Log')
+            : path.join(__dirname, 'logs');
+
         if (!fs.existsSync(logDir)) {
             fs.mkdirSync(logDir, { recursive: true });
         }
@@ -55,7 +110,9 @@ function writeLog(playerName, p, s, feld, wert) {
         const logFilePath = path.join(logDir, logFileName);
         const logLine = `${year}.${month}.${day};${playerName};Passe${p};Spiel${s};${feld};${wert}\n`;
         fs.appendFileSync(logFilePath, logLine, 'utf8');
-    } catch (err) { console.error("Fehler beim Loggen:", err); }
+    } catch (err) { 
+        // Log-Fehler stoppen nicht den Server
+    }
 }
 
 function getPlayerBySocket(socketId) {
@@ -65,6 +122,7 @@ function getPlayerBySocket(socketId) {
     return null;
 }
 
+// --- SOCKET.IO EVENT HANDLER ---
 io.on('connection', (socket) => {
     socket.emit('init', { hostState, players, gameState, ROOM_CODE });
 
@@ -215,6 +273,13 @@ io.on('connection', (socket) => {
                     for(let i=1; i<=4; i++) totalDiffPasse += gameState.matrix[p][i].diff[pl.position] || 0;
                     writeLog(pl.name, p, "Gesamt", "Diff.", totalDiffPasse);
                 }
+
+                // Automatische Speicherung in MongoDB am Ende einer Passe
+                if (MONGO_URI) {
+                    new GameRecord({ roomCode: ROOM_CODE, players, gameState }).save()
+                        .then(() => console.log('☁️ Passe automatisch in MongoDB gespeichert.'))
+                        .catch(e => console.error('Fehler beim Autosave:', e));
+                }
             }
 
             if (gameState.currentSpiel < 4) {
@@ -249,5 +314,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => { 
-    console.log(`Server läuft auf Srv-Differenzler-01: http://localhost:${PORT}`); 
+    console.log(`Server läuft auf Port ${PORT}`); 
 });

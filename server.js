@@ -1,5 +1,5 @@
 const express = require('express');
-const http = require('http'); // <-- Korrekt
+const http = require('http');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const path = require('path');
@@ -111,24 +111,28 @@ app.get('/api/games/history', async (req, res) => {
 let hostState = "Frei"; 
 let players = {}; // Map: token -> { name, position, socketId }
 
-let gameState = {
-    currentPasse: 1,
-    currentSpiel: 1,
-    matrix: Array.from({ length: 6 }, () => 
-        Array.from({ length: 6 }, () => ({
-            estimates: { Spieler1: null, Spieler2: null, Spieler3: null, Spieler4: null },
-            actual: { Spieler1: null, Spieler2: null, Spieler3: null, Spieler4: null },
-            diff: { Spieler1: null, Spieler2: null, Spieler3: null, Spieler4: null },
-            hidden: { Spieler1: true, Spieler2: true, Spieler3: true, Spieler4: true },
-            cards: {
-                Spieler1: { puur: 0, nell: 0, ass: 0, koenig: 0, dame: 0, bube: 0, zehn: 0, letzter: 0 },
-                Spieler2: { puur: 0, nell: 0, ass: 0, koenig: 0, dame: 0, bube: 0, zehn: 0, letzter: 0 },
-                Spieler3: { puur: 0, nell: 0, ass: 0, koenig: 0, dame: 0, bube: 0, zehn: 0, letzter: 0 },
-                Spieler4: { puur: 0, nell: 0, ass: 0, koenig: 0, dame: 0, bube: 0, zehn: 0, letzter: 0 }
-            }
-        }))
-    )
-};
+function createInitialGameState() {
+    return {
+        currentPasse: 1,
+        currentSpiel: 1,
+        matrix: Array.from({ length: 5 }, () => 
+            Array.from({ length: 5 }, () => ({
+                estimates: { Spieler1: null, Spieler2: null, Spieler3: null, Spieler4: null },
+                actual: { Spieler1: null, Spieler2: null, Spieler3: null, Spieler4: null },
+                diff: { Spieler1: null, Spieler2: null, Spieler3: null, Spieler4: null },
+                hidden: { Spieler1: true, Spieler2: true, Spieler3: true, Spieler4: true },
+                cards: {
+                    Spieler1: { puur: 0, nell: 0, ass: 0, koenig: 0, dame: 0, bube: 0, zehn: 0, letzter: 0 },
+                    Spieler2: { puur: 0, nell: 0, ass: 0, koenig: 0, dame: 0, bube: 0, zehn: 0, letzter: 0 },
+                    Spieler3: { puur: 0, nell: 0, ass: 0, koenig: 0, dame: 0, bube: 0, zehn: 0, letzter: 0 },
+                    Spieler4: { puur: 0, nell: 0, ass: 0, koenig: 0, dame: 0, bube: 0, zehn: 0, letzter: 0 }
+                }
+            }))
+        )
+    };
+}
+
+let gameState = createInitialGameState();
 
 // Lokales Loggen (Fehlerfrei auf Linux/Render abgefangen)
 function writeLog(playerName, p, s, feld, wert) {
@@ -233,6 +237,7 @@ io.on('connection', (socket) => {
 
     socket.on('reset_table', () => {
         players = {};
+        gameState = createInitialGameState(); // Komplett frischer Spielstand
         io.emit('players_updated', players);
         io.emit('game_state_updated', gameState);
     });

@@ -91,26 +91,28 @@
         </div>
 
         <!-- Ergebnis-Rechner (Kartenwerte) -->
-        <h3 class="section-title" style="margin-top: 16px;">Ergebnis-Rechner (Kartenwerte)</h3>
-        <div class="grid-calc">
-            <div class="calc-item"><label>Puur (20):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('puur', -1)">-</button><input type="number" id="c-puur" value="0" min="0" max="1" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('puur', 1)">+</button></div></div>
-            <div class="calc-item"><label>Nell (14):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('nell', -1)">-</button><input type="number" id="c-nell" value="0" min="0" max="1" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('nell', 1)">+</button></div></div>
-            <div class="calc-item"><label>Ass (11):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('ass', -1)">-</button><input type="number" id="c-ass" value="0" min="0" max="4" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('ass', 1)">+</button></div></div>
-            <div class="calc-item"><label>König (4):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('koenig', -1)">-</button><input type="number" id="c-koenig" value="0" min="0" max="4" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('koenig', 1)">+</button></div></div>
-            <div class="calc-item"><label>Dame (3):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('dame', -1)">-</button><input type="number" id="c-dame" value="0" min="0" max="4" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('dame', 1)">+</button></div></div>
-            <div class="calc-item"><label>Bube (2):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('bube', -1)">-</button><input type="number" id="c-bube" value="0" min="0" max="3" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('bube', 1)">+</button></div></div>
-            <div class="calc-item"><label>Zehn (10):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('zehn', -1)">-</button><input type="number" id="c-zehn" value="0" min="0" max="4" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('zehn', 1)">+</button></div></div>
-            <div class="calc-item"><label>Letzter (5):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('letzter', -1)">-</button><input type="number" id="c-letzter" value="0" min="0" max="1" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('letzter', 1)">+</button></div></div>
-        </div>
-        <div class="calc-footer" style="margin-bottom: 16px;">
-            Summe eintragen im Feld "Spiel": <span id="calc-total" class="calc-total-box">0</span>
+        <h3 id="calc-section-title" class="section-title" style="margin-top: 16px; opacity: 0.5;">Ergebnis-Rechner (Kartenwerte) — Erst nach allen Ansagen aktiv</h3>
+        <div id="calc-container" style="opacity: 0.5; pointer-events: none;">
+            <div class="grid-calc">
+                <div class="calc-item"><label>Puur (20):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('puur', -1)">-</button><input type="number" id="c-puur" value="0" min="0" max="1" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('puur', 1)">+</button></div></div>
+                <div class="calc-item"><label>Nell (14):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('nell', -1)">-</button><input type="number" id="c-nell" value="0" min="0" max="1" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('nell', 1)">+</button></div></div>
+                <div class="calc-item"><label>Ass (11):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('ass', -1)">-</button><input type="number" id="c-ass" value="0" min="0" max="4" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('ass', 1)">+</button></div></div>
+                <div class="calc-item"><label>König (4):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('koenig', -1)">-</button><input type="number" id="c-koenig" value="0" min="0" max="4" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('koenig', 1)">+</button></div></div>
+                <div class="calc-item"><label>Dame (3):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('dame', -1)">-</button><input type="number" id="c-dame" value="0" min="0" max="4" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('dame', 1)">+</button></div></div>
+                <div class="calc-item"><label>Bube (2):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('bube', -1)">-</button><input type="number" id="c-bube" value="0" min="0" max="3" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('bube', 1)">+</button></div></div>
+                <div class="calc-item"><label>Zehn (10):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('zehn', -1)">-</button><input type="number" id="c-zehn" value="0" min="0" max="4" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('zehn', 1)">+</button></div></div>
+                <div class="calc-item"><label>Letzter (5):</label><div class="calc-controls"><button type="button" class="btn-pm" onclick="changeCard('letzter', -1)">-</button><input type="number" id="c-letzter" value="0" min="0" max="1" oninput="calc()"><button type="button" class="btn-pm" onclick="changeCard('letzter', 1)">+</button></div></div>
+            </div>
+            <div class="calc-footer" style="margin-bottom: 16px;">
+                Summe eintragen im Feld "Spiel": <span id="calc-total" class="calc-total-box">0</span>
+            </div>
         </div>
 
         <!-- Grünes Feld: Spiel (Erspielte Punkte) + eigener Sende-Button -->
         <div class="input-group">
             <label>Spiel (Erspielte Punkte):</label>
-            <input id="val-act" type="number" min="0" max="157" placeholder="0 - 157" class="input-main bg-spiel" oninput="manualInputCalc()">
-            <button id="btn-send-act" onclick="sendActual()" class="btn-submit btn-frei">Spielergebnis senden</button>
+            <input id="val-act" type="number" min="0" max="157" placeholder="Warten auf alle Ansagen..." class="input-main bg-spiel" oninput="manualInputCalc()" disabled>
+            <button id="btn-send-act" onclick="sendActual()" class="btn-submit btn-locked" disabled>Erst nach allen Ansagen möglich</button>
         </div>
         <p id="player-error" class="error-msg"></p>
     </div>
@@ -336,6 +338,8 @@
             const btnAct = document.getElementById('btn-send-act');
             const inputEst = document.getElementById('val-est');
             const inputAct = document.getElementById('val-act');
+            const calcContainer = document.getElementById('calc-container');
+            const calcTitle = document.getElementById('calc-section-title');
 
             if(hostState === "Sperren") {
                 btnEst.className = "btn-submit btn-locked";
@@ -345,6 +349,9 @@
                 btnAct.innerText = "Host gesperrt";
                 btnAct.disabled = true;
                 inputEst.disabled = true;
+                inputAct.disabled = true;
+                calcContainer.style.opacity = "0.5";
+                calcContainer.style.pointerEvents = "none";
                 return;
             }
 
@@ -352,6 +359,15 @@
                 const cell = currentGameState.matrix[p][s];
                 const estVal = cell.estimates[myPosition];
                 const actVal = cell.actual[myPosition];
+
+                // Prüfen, ob ALLE 4 Spieler ihre Ansage gemacht haben
+                let allEstimatesDone = true;
+                for (let pos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) {
+                    if (cell.estimates[pos] === null) {
+                        allEstimatesDone = false;
+                        break;
+                    }
+                }
 
                 if(estVal !== null) {
                     if (document.activeElement !== inputEst) inputEst.value = estVal;
@@ -366,37 +382,54 @@
                     btnEst.disabled = false;
                 }
 
-                updateCardMaxLimits();
-
-                let sumAct = 0;
-                let hasActuals = false;
-                for (let pos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) {
-                    if (cell.actual[pos] !== null) {
-                        sumAct += cell.actual[pos];
-                        hasActuals = true;
-                    }
-                }
-
-                if(actVal !== null) {
-                    if(cell.cards && cell.cards[myPosition]) {
-                        for(let k in cell.cards[myPosition]) {
-                            let cardInp = document.getElementById(`c-${k}`);
-                            if(cardInp && document.activeElement !== cardInp) cardInp.value = cell.cards[myPosition][k];
-                        }
-                    }
-                    if(document.activeElement !== inputAct) inputAct.value = actVal;
-                }
-
-                if (sumAct === 157) {
+                // Ergebnis-Feld und Rechner erst freigeben, wenn alle Ansagen da sind
+                if (!allEstimatesDone) {
+                    calcContainer.style.opacity = "0.5";
+                    calcContainer.style.pointerEvents = "none";
+                    calcTitle.innerText = "Ergebnis-Rechner (Kartenwerte) — Wartet auf alle Ansagen";
                     inputAct.disabled = true;
+                    inputAct.placeholder = "Warten auf alle Ansagen...";
                     btnAct.className = "btn-submit btn-locked";
-                    btnAct.innerText = "Spielergebnis gesendet (157 OK)";
+                    btnAct.innerText = "Erst nach allen Ansagen möglich";
                     btnAct.disabled = true;
                 } else {
-                    inputAct.disabled = false;
-                    btnAct.className = "btn-submit btn-frei";
-                    btnAct.innerText = hasActuals ? `Korrigieren (Summe: ${sumAct}/157)` : "Spielergebnis senden";
-                    btnAct.disabled = false;
+                    calcContainer.style.opacity = "1";
+                    calcContainer.style.pointerEvents = "auto";
+                    calcTitle.innerText = "Ergebnis-Rechner (Kartenwerte)";
+                    
+                    updateCardMaxLimits();
+
+                    let sumAct = 0;
+                    let hasActuals = false;
+                    for (let pos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) {
+                        if (cell.actual[pos] !== null) {
+                            sumAct += cell.actual[pos];
+                            hasActuals = true;
+                        }
+                    }
+
+                    if(actVal !== null) {
+                        if(cell.cards && cell.cards[myPosition]) {
+                            for(let k in cell.cards[myPosition]) {
+                                let cardInp = document.getElementById(`c-${k}`);
+                                if(cardInp && document.activeElement !== cardInp) cardInp.value = cell.cards[myPosition][k];
+                            }
+                        }
+                        if(document.activeElement !== inputAct) inputAct.value = actVal;
+                    }
+
+                    if (sumAct === 157) {
+                        inputAct.disabled = true;
+                        btnAct.className = "btn-submit btn-locked";
+                        btnAct.innerText = "Spielergebnis gesendet (157 OK)";
+                        btnAct.disabled = true;
+                    } else {
+                        inputAct.disabled = false;
+                        inputAct.placeholder = "0 - 157";
+                        btnAct.className = "btn-submit btn-frei";
+                        btnAct.innerText = hasActuals ? `Korrigieren (Summe: ${sumAct}/157)` : "Spielergebnis senden";
+                        btnAct.disabled = false;
+                    }
                 }
             }
         }

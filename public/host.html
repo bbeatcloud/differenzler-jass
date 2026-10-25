@@ -63,12 +63,56 @@
         .btn-next { background-color: #166534; color: white; padding: 14px 40px; font-size: 18px; font-weight: 900; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); cursor: pointer; }
         .btn-next:hover { background-color: #14532d; }
         
+        /* Modal Dialog Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-card { background: white; padding: 24px; border-radius: 16px; width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid #dcfce7; }
+        .modal-title { font-size: 20px; font-weight: 900; color: #14532d; margin-top: 0; margin-bottom: 16px; text-align: center; }
+        .modal-input { width: 100%; padding: 10px; margin-bottom: 12px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
+        .modal-btn { width: 100%; padding: 12px; background-color: #166534; color: white; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; font-size: 15px; }
+        .modal-btn:hover { background-color: #14532d; }
+        .modal-error { color: #dc2626; font-size: 13px; font-weight: bold; text-align: center; margin-top: 8px; margin-bottom: 0; }
+
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     </style>
 </head>
 <body>
 
-    <div class="container">
+    <!-- LOGIN MODAL (Initial ausgeblendet, wird beim Öffnen von /host gezeigt) -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h2 class="modal-title">Host Login</h2>
+            <p style="font-size: 13px; color: #6b7280; text-align: center; margin-top: 0; margin-bottom: 16px;">Bitte gib das Host-Passwort ein, um das Kontrollblatt zu öffnen.</p>
+            <input id="auth-password" type="password" placeholder="Passwort eingeben" class="modal-input" onkeydown="if(event.key==='Enter') verifyHostPassword()">
+            <button onclick="verifyHostPassword()" class="modal-btn">Anmelden</button>
+            <p id="auth-error" class="modal-error"></p>
+        </div>
+    </div>
+
+    <!-- EINSTELLUNGEN MODAL -->
+    <div id="settings-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-card" style="width: 400px;">
+            <h2 class="modal-title">Einstellungen</h2>
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 12px; font-weight: bold; color: #374151; display: block; margin-bottom: 4px;">Aktuelles Passwort (Pflicht):</label>
+                <input id="set-current-pass" type="password" placeholder="Aktuelles Passwort" class="modal-input">
+            </div>
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 12px; font-weight: bold; color: #374151; display: block; margin-bottom: 4px;">Neues Passwort (optional):</label>
+                <input id="set-new-pass" type="password" placeholder="Neues Passwort (min. 4 Zeichen)" class="modal-input">
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 12px; font-weight: bold; color: #374151; display: block; margin-bottom: 4px;">Neuer Raum-Code (4-6 Zeichen):</label>
+                <input id="set-new-code" type="text" placeholder="z. B. JASS" maxlength="6" class="modal-input" style="text-transform: uppercase;">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="closeSettingsModal()" style="width: 50%; padding: 12px; background-color: #6b7280; color: white; font-weight: bold; border-radius: 8px; border: none; cursor: pointer;">Abbrechen</button>
+                <button onclick="saveSettings()" style="width: 50%; padding: 12px; background-color: #166534; color: white; font-weight: bold; border-radius: 8px; border: none; cursor: pointer;">Speichern</button>
+            </div>
+            <p id="settings-error" class="modal-error"></p>
+        </div>
+    </div>
+
+    <div class="container" id="main-content" style="display: none;">
         <!-- Header -->
         <div class="header">
             <div>
@@ -81,11 +125,12 @@
             </div>
         </div>
 
-        <!-- Action Bar: Reset & Neue Cloud/Export Funktionen -->
-        <div style="margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <!-- Action Bar: Reset, Export, DB Save & Einstellungen -->
+        <div style="margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
             <button onclick="resetTable()" style="background-color: #b91c1c; color: white; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer;">Tisch zurücksetzen</button>
             <button onclick="exportTableToCSV()" style="background-color: #2b8a3e; color: white; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer;">📥 Als Excel/CSV exportieren</button>
             <button onclick="saveToMongoDB()" style="background-color: #1c7ed6; color: white; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer;">☁️ In Datenbank speichern</button>
+            <button onclick="openSettingsModal()" style="background-color: #4b5563; color: white; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-left: auto;">⚙️ Einstellungen</button>
         </div>
 
         <div class="lobby-bar">
@@ -137,12 +182,88 @@
         let currentPlayers = {};
         let currentGameState = null;
 
+        // Passwort-Authentifizierung beim Öffnen
+        function verifyHostPassword() {
+            const pass = document.getElementById('auth-password').value;
+            fetch('/api/host/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pass })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('auth-modal').style.display = 'none';
+                    document.getElementById('main-content').style.display = 'block';
+                } else {
+                    document.getElementById('auth-error').innerText = data.error;
+                }
+            })
+            .catch(err => {
+                document.getElementById('auth-error').innerText = 'Verbindungsfehler zum Server.';
+            });
+        }
+
+        // Einstellungen Modal öffnen/schliessen
+        function openSettingsModal() {
+            document.getElementById('set-current-pass').value = '';
+            document.getElementById('set-new-pass').value = '';
+            document.getElementById('set-new-code').value = document.getElementById('host-room-code').innerText;
+            document.getElementById('settings-error').innerText = '';
+            document.getElementById('settings-modal').style.display = 'flex';
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+
+        // Einstellungen speichern
+        function saveSettings() {
+            const currentPassword = document.getElementById('set-current-pass').value;
+            const newPassword = document.getElementById('set-new-pass').value;
+            const newRoomCode = document.getElementById('set-new-code').value;
+
+            if (!currentPassword) {
+                document.getElementById('settings-error').innerText = 'Bitte aktuelles Passwort eingeben.';
+                return;
+            }
+
+            fetch('/api/host/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword, newPassword, newRoomCode })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    if (data.roomCode) {
+                        document.getElementById('host-room-code').innerText = data.roomCode;
+                    }
+                    closeSettingsModal();
+                } else {
+                    document.getElementById('settings-error').innerText = data.error;
+                }
+            })
+            .catch(err => {
+                document.getElementById('settings-error').innerText = 'Fehler beim Speichern der Einstellungen.';
+            });
+        }
+
         socket.on('init', (data) => {
             currentPlayers = data.players || {};
             currentGameState = data.gameState;
+            if (data.ROOM_CODE) {
+                document.getElementById('host-room-code').innerText = data.ROOM_CODE;
+            }
             updateLobbyStatus(currentPlayers);
             renderAll();
             handleHostState(data.hostState);
+        });
+
+        socket.on('room_code_updated', (code) => {
+            const codeEl = document.getElementById('host-room-code');
+            if (codeEl) codeEl.innerText = code;
         });
 
         socket.on('host_state_changed', handleHostState);
@@ -166,7 +287,7 @@
             }
         }
 
-        // --- NEUE FUNKTIONEN: EXCEL/CSV EXPORT & MONGODB SAVE ---
+        // --- EXCEL/CSV EXPORT & MONGODB SAVE ---
         function exportTableToCSV(filename = 'jass_spielstand.csv') {
             let csv = [];
             const rows = document.querySelectorAll("table tr");
@@ -176,7 +297,7 @@
                 for (let j = 0; j < cols.length; j++) {
                     row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
                 }
-                csv.push(row.join(";")); // Semikolon für Schweizer / Deutsches Excel
+                csv.push(row.join(";")); 
             }
 
             const csvFile = new Blob(["\ufeff" + csv.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -208,7 +329,6 @@
                 alert("❌ Verbindung zum Server fehlgeschlagen.");
             });
         }
-        // --------------------------------------------------------
 
         function updateLobbyStatus(players) {
             for(let i = 1; i <= 4; i++) {

@@ -1,5 +1,5 @@
 const express = require('express');
-const http = require('http');
+const http = http = require('http');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const path = require('path');
@@ -14,7 +14,10 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const PORT = process.env.PORT || 4000;
-const ROOM_CODE = "JASS"; 
+
+// Konfigurierbare Werte mit Standardvorgaben
+let ROOM_CODE = "JASS"; 
+let HOST_PASSWORD = "Differenzler-Jass26";
 
 // --- MONGODB ATLAS VERBINDUNG & SCHEMA ---
 const MONGO_URI = process.env.MONGO_URI;
@@ -36,9 +39,46 @@ const gameRecordSchema = new mongoose.Schema({
 
 const GameRecord = mongoose.model('GameRecord', gameRecordSchema);
 
-// --- API ENDPUNKTE FÜR DIE HISTORIE ---
+// --- API ENDPUNKTE FÜR DIE HISTORIE & CONFIG ---
 app.get('/host', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'host.html'));
+});
+
+// Passwort prüfen
+app.post('/api/host/login', (req, res) => {
+    const { password } = req.body;
+    if (password === HOST_PASSWORD) {
+        res.json({ success: true });
+    } else {
+        res.status(401).json({ success: false, error: 'Falsches Passwort!' });
+    }
+});
+
+// Einstellungen aktualisieren (Passwort / Raumcode)
+app.post('/api/host/settings', (req, res) => {
+    const { currentPassword, newPassword, newRoomCode } = req.body;
+    
+    if (currentPassword !== HOST_PASSWORD) {
+        return res.status(401).json({ success: false, error: 'Das aktuelle Passwort ist falsch!' });
+    }
+
+    if (newPassword) {
+        if (newPassword.length < 4) {
+            return res.status(400).json({ success: false, error: 'Das neue Passwort muss mindestens 4 Zeichen lang sein.' });
+        }
+        HOST_PASSWORD = newPassword;
+    }
+
+    if (newRoomCode) {
+        const trimmedCode = newRoomCode.trim().toUpperCase();
+        if (trimmedCode.length < 4 || trimmedCode.length > 6) {
+            return res.status(400).json({ success: false, error: 'Der Raum-Code muss zwischen 4 und 6 Zeichen lang sein.' });
+        }
+        ROOM_CODE = trimmedCode;
+        io.emit('room_code_updated', ROOM_CODE);
+    }
+
+    res.json({ success: true, message: 'Einstellungen erfolgreich aktualisiert!', roomCode: ROOM_CODE });
 });
 
 // Spielstand manuell oder automatisch in MongoDB speichern

@@ -192,7 +192,10 @@
 
                 const inputEl = document.getElementById(`c-${cardKey}`);
                 if (inputEl) {
-                    inputEl.max = remaining;
+                    // Erlaube dem Spieler immer, auf 0 zu gehen (keine Karten zu haben), 
+                    // auch wenn andere bereits Karten verbraucht haben.
+                    let currentVal = parseInt(inputEl.value) || 0;
+                    inputEl.max = Math.max(remaining, currentVal);
                 }
             }
         }
@@ -227,7 +230,7 @@
             ['puur','nell','ass','koenig','dame','bube','zehn','letzter'].forEach(key => {
                 let el = document.getElementById(`c-${key}`);
                 let val = parseInt(el.value) || 0;
-                let maxAllowed = getRemaining(key);
+                let maxAllowed = Math.max(getRemaining(key), val);
                 if (val < 0) el.value = 0;
                 if (val > maxAllowed) el.value = maxAllowed;
             });
@@ -360,7 +363,6 @@
                 const estVal = cell.estimates[myPosition];
                 const actVal = cell.actual[myPosition];
 
-                // Prüfen, ob ALLE 4 Spieler ihre Ansage gemacht haben
                 let allEstimatesDone = true;
                 for (let pos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) {
                     if (cell.estimates[pos] === null) {
@@ -382,7 +384,6 @@
                     btnEst.disabled = false;
                 }
 
-                // Ergebnis-Feld und Rechner erst freigeben, wenn alle Ansagen da sind
                 if (!allEstimatesDone) {
                     calcContainer.style.opacity = "0.5";
                     calcContainer.style.pointerEvents = "none";

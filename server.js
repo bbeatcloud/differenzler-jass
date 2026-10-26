@@ -180,7 +180,6 @@ io.on('connection', (socket) => {
             return socket.emit('error_msg', 'Bitte gib einen gültigen Namen ein!');
         }
 
-        // 1. Re-Connect über Session-Token
         if (token && players[token]) {
             players[token].socketId = socket.id;
             players[token].name = cleanName;
@@ -188,7 +187,6 @@ io.on('connection', (socket) => {
             return socket.emit('registration_success', { name: cleanName, position: players[token].position, token });
         }
 
-        // 2. Re-Connect über denselben Namen (falls Token gewechselt hat)
         let existingToken = null;
         for (let t in players) {
             if (players[t].name.toLowerCase() === cleanName.toLowerCase()) {
@@ -204,7 +202,6 @@ io.on('connection', (socket) => {
             return socket.emit('registration_success', { name: cleanName, position: players[existingToken].position, token: existingToken });
         }
 
-        // 3. Neuer Spieler - Prüfen ob Tisch voll (max 4)
         const activePlayersCount = Object.keys(players).length;
         if (activePlayersCount >= 4) {
             return socket.emit('error_msg', 'Der Tisch ist bereits voll! (Max. 4 Spieler)');
@@ -275,6 +272,23 @@ io.on('connection', (socket) => {
         const s = gameState.currentSpiel;
         const pos = player.position;
 
+        const parsedActual = parseInt(actual);
+        if (isNaN(parsedActual) || parsedActual < 0 || parsedActual > 157) {
+            return socket.emit('error_msg', 'Ungültige Punktzahl!');
+        }
+
+        // Prüfen, ob durch diesen Wert die Gesamtsumme von 157 überschritten wird
+        let tempSum = parsedActual;
+        for (let otherPos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) {
+            if (otherPos !== pos && gameState.matrix[p][s].actual[otherPos] !== null) {
+                tempSum += gameState.matrix[p][s].actual[otherPos];
+            }
+        }
+
+        if (tempSum > 157) {
+            return socket.emit('error_msg', `Fehler: Die Gesamtsumme darf 157 nicht überschreiten! (Aktuell: ${tempSum})`);
+        }
+
         const cardLimits = { puur: 1, nell: 1, ass: 4, koenig: 4, dame: 4, bube: 3, zehn: 4, letzter: 1 };
         
         for (let cardKey in cardLimits) {
@@ -291,17 +305,16 @@ io.on('connection', (socket) => {
         }
 
         gameState.matrix[p][s].cards[pos] = cards;
-        gameState.matrix[p][s].actual[pos] = parseInt(actual);
-        writeLog(player.name, p, s, "Spiel.", actual);
+        gameState.matrix[p][s].actual[pos] = parsedActual;
+        writeLog(player.name, p, s, "Spiel.", parsedActual);
 
         const est = gameState.matrix[p][s].estimates[pos] !== null ? gameState.matrix[p][s].estimates[pos] : 0;
-        const diff = Math.abs(est - parseInt(actual));
+        const diff = Math.abs(est - parsedActual);
         gameState.matrix[p][s].diff[pos] = diff;
         writeLog(player.name, p, s, "Diff.", diff);
 
         gameState.matrix[p][s].hidden[pos] = false;
 
-        // Prüfen, wie viele Spieler bereits ein Ergebnis eingetragen haben und ob die Summe 157 ist
         let count = 0;
         let sumAct = 0;
         for(let k of ['Spieler1','Spieler2','Spieler3','Spieler4']) {
@@ -311,8 +324,6 @@ io.on('connection', (socket) => {
             }
         }
 
-        // Das Spiel ist erst dann beendet, wenn ALLE 4 Spieler ein Ergebnis eingegeben haben 
-        // UND die Gesamtsumme exakt 157 beträgt.
         if (count === 4 && sumAct === 157) {
             if (s === 4) {
                 for (let token in players) {

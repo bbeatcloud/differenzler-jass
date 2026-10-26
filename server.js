@@ -237,7 +237,7 @@ io.on('connection', (socket) => {
 
     socket.on('reset_table', () => {
         players = {};
-        gameState = createInitialGameState(); // Komplett frischer Spielstand
+        gameState = createInitialGameState();
         io.emit('players_updated', players);
         io.emit('game_state_updated', gameState);
     });
@@ -301,6 +301,7 @@ io.on('connection', (socket) => {
 
         gameState.matrix[p][s].hidden[pos] = false;
 
+        // Prüfen, wie viele Spieler bereits ein Ergebnis eingetragen haben und ob die Summe 157 ist
         let count = 0;
         let sumAct = 0;
         for(let k of ['Spieler1','Spieler2','Spieler3','Spieler4']) {
@@ -310,6 +311,8 @@ io.on('connection', (socket) => {
             }
         }
 
+        // Das Spiel ist erst dann beendet, wenn ALLE 4 Spieler ein Ergebnis eingegeben haben 
+        // UND die Gesamtsumme exakt 157 beträgt.
         if (count === 4 && sumAct === 157) {
             if (s === 4) {
                 for (let token in players) {
@@ -319,7 +322,6 @@ io.on('connection', (socket) => {
                     writeLog(pl.name, p, "Gesamt", "Diff.", totalDiffPasse);
                 }
 
-                // Automatische Speicherung in MongoDB am Ende einer Passe
                 if (MONGO_URI) {
                     new GameRecord({ roomCode: ROOM_CODE, players, gameState }).save()
                         .then(() => console.log('☁️ Passe automatisch in MongoDB gespeichert.'))

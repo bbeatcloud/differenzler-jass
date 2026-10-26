@@ -399,9 +399,11 @@
                     updateCardMaxLimits();
 
                     let sumAct = 0;
+                    let submittedCount = 0;
                     for (let pos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) {
                         if (cell.actual[pos] !== null) {
                             sumAct += cell.actual[pos];
+                            submittedCount++;
                         }
                     }
 
@@ -415,28 +417,19 @@
                         if(document.activeElement !== inputAct) inputAct.value = actVal;
                     }
 
-                    // Das Feld wird nur dann für DIESEN Spieler gesperrt, wenn ER SELBST 
-                    // bereits ein Ergebnis eingetragen hat ODER (Summe >= 157 und er hat noch kein Ergebnis und ist nicht derjenige der 0 einträgt).
-                    // Da man 0 eintragen will, erlauben wir es, solange der Spieler selbst noch kein Resultat hat (actVal === null).
-                    if (actVal !== null) {
+                    // Das Spiel ist erst dann fest gesperrt, wenn alle 4 Spieler abgesendet haben UND die Summe 157 ist.
+                    // Ansonsten bleibt das Feld offen zum Korrigieren oder Eintragen (z.B. für 0 Punkte).
+                    if (submittedCount === 4 && sumAct === 157) {
                         inputAct.disabled = true;
                         btnAct.className = "btn-submit btn-locked";
                         btnAct.innerText = "Spielergebnis gesendet (157 OK)";
                         btnAct.disabled = true;
-                    } else if (sumAct >= 157) {
-                        // Summe ist schon 157 oder mehr, aber dieser Spieler hat noch nichts eingetragen -> Er darf (und muss) seine 0 eintragen!
-                        inputAct.disabled = false;
-                        inputAct.value = 0; // Direkt als Hilfe 0 vorschlagen
-                        calc(); // Rechner-Summe aktualisieren
-                        btnAct.className = "btn-submit btn-frei";
-                        btnAct.innerText = "Spielergebnis senden (0 Punkte)";
-                        btnAct.disabled = false;
                     } else {
                         inputAct.disabled = false;
                         inputAct.placeholder = "0 - 157";
-                        let hasActuals = sumAct > 0;
+                        let hasActuals = actVal !== null;
                         btnAct.className = "btn-submit btn-frei";
-                        btnAct.innerText = hasActuals ? `Korrigieren (Summe: ${sumAct}/157)` : "Spielergebnis senden";
+                        btnAct.innerText = hasActuals ? `Ergebnis korrigieren (Summe: ${sumAct}/157)` : "Spielergebnis senden";
                         btnAct.disabled = false;
                     }
                 }

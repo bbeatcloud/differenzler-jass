@@ -319,12 +319,13 @@
 
         function handleState() {
             if(!currentGameState) return;
+
+            // Fehlermeldung bei JEDEM Status- oder Spielwechsel sofort bereinigen
+            document.getElementById('player-error').innerText = "";
+
             const p = currentGameState.currentPasse;
             const s = currentGameState.currentSpiel;
             document.getElementById('current-field').innerText = `Passe ${p} - Spiel ${s}`;
-
-            // Fehlermeldung bei Statuswechsel oder erfolgreichem Update automatisch löschen
-            document.getElementById('player-error').innerText = "";
 
             if (lastPasse !== p || lastSpiel !== s) {
                 lastPasse = p;

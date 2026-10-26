@@ -320,7 +320,6 @@
         function handleState() {
             if(!currentGameState) return;
 
-            // Fehlermeldung bei JEDEM Status- oder Spielwechsel sofort bereinigen
             document.getElementById('player-error').innerText = "";
 
             const p = currentGameState.currentPasse;
@@ -426,6 +425,15 @@
                         btnAct.className = "btn-submit btn-locked";
                         btnAct.innerText = "Spielergebnis gesendet (157 OK)";
                         btnAct.disabled = true;
+                    } else if (submittedCount === 3 && sumAct === 157 && actVal === null) {
+                        // Sonderfall: Die anderen 3 Spieler haben bereits 157 Punkte verbraucht.
+                        // Der 4. Spieler muss nun 0 eingeben können.
+                        inputAct.disabled = false;
+                        inputAct.value = 0;
+                        calc();
+                        btnAct.className = "btn-submit btn-frei";
+                        btnAct.innerText = "0 Punkte senden (Runde abschliessen)";
+                        btnAct.disabled = false;
                     } else {
                         inputAct.disabled = false;
                         inputAct.placeholder = "0 - 157";

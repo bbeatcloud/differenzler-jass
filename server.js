@@ -15,7 +15,6 @@ app.use(express.static('public'));
 
 const PORT = process.env.PORT || 4000;
 
-// Konfigurierbare Werte mit Standardvorgaben
 let ROOM_CODE = "JASS"; 
 let HOST_PASSWORD = "Differenzler-Jass26";
 
@@ -54,7 +53,7 @@ app.post('/api/host/login', (req, res) => {
     }
 });
 
-// Einstellungen aktualisieren (Passwort / Raumcode)
+// Einstellungen aktualisieren
 app.post('/api/host/settings', (req, res) => {
     const { currentPassword, newPassword, newRoomCode } = req.body;
     
@@ -97,22 +96,13 @@ app.post('/api/games/save', async (req, res) => {
     }
 });
 
-// Die letzten gespielten Partien auslesen
+// Die letzten gespielten Partien auslesen (Einfach & sauber, ohne Duplikate)
 app.get('/api/games/history', async (req, res) => {
     try {
         const games = await GameRecord.find().sort({ createdAt: -1 }).limit(20);
         res.json(games);
     } catch (err) {
-        res.status(500).json({ success: false, error: 'Historie konnte nicht geladen werden' });
-    }
-});
-
-// Die letzten gespielten Partien auslesen
-app.get('/api/games/history', async (req, res) => {
-    try {
-        const games = await GameRecord.find().sort({ createdAt: -1 }).limit(20);
-        res.json(games);
-    } catch (err) {
+        console.error('Fehler beim Abrufen der Historie:', err);
         res.status(500).json({ success: false, error: 'Historie konnte nicht geladen werden' });
     }
 });
@@ -142,7 +132,7 @@ app.post('/api/games/load/:id', async (req, res) => {
 
 // --- SPIEL-STATUS & VARIABLEN ---
 let hostState = "Frei"; 
-let players = {}; // Map: token -> { name, position, socketId }
+let players = {}; 
 
 function createInitialGameState() {
     return {
@@ -167,7 +157,6 @@ function createInitialGameState() {
 
 let gameState = createInitialGameState();
 
-// Lokales Loggen (Fehlerfrei auf Linux/Render abgefangen)
 function writeLog(playerName, p, s, feld, wert) {
     try {
         const today = new Date();
@@ -187,9 +176,7 @@ function writeLog(playerName, p, s, feld, wert) {
         const logFilePath = path.join(logDir, logFileName);
         const logLine = `${year}.${month}.${day};${playerName};Passe${p};Spiel${s};${feld};${wert}\n`;
         fs.appendFileSync(logFilePath, logLine, 'utf8');
-    } catch (err) { 
-        // Log-Fehler stoppen nicht den Server
-    }
+    } catch (err) {}
 }
 
 function getPlayerBySocket(socketId) {
@@ -199,7 +186,6 @@ function getPlayerBySocket(socketId) {
     return null;
 }
 
-// --- SOCKET.IO EVENT HANDLER ---
 io.on('connection', (socket) => {
     socket.emit('init', { hostState, players, gameState, ROOM_CODE });
 
@@ -310,7 +296,6 @@ io.on('connection', (socket) => {
             return socket.emit('error_msg', 'Ungültige Punktzahl!');
         }
 
-        // Prüfen, ob durch diesen Wert die Gesamtsumme von 157 überschritten wird
         let tempSum = parsedActual;
         for (let otherPos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) {
             if (otherPos !== pos && gameState.matrix[p][s].actual[otherPos] !== null) {

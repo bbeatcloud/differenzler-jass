@@ -107,6 +107,16 @@ app.get('/api/games/history', async (req, res) => {
     }
 });
 
+// Die letzten gespielten Partien auslesen
+app.get('/api/games/history', async (req, res) => {
+    try {
+        const games = await GameRecord.find().sort({ createdAt: -1 }).limit(20);
+        res.json(games);
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Historie konnte nicht geladen werden' });
+    }
+});
+
 // Einen spezifischen Spielstand aus der Historie laden und wiederherstellen
 app.post('/api/games/load/:id', async (req, res) => {
     try {
@@ -117,11 +127,9 @@ app.post('/api/games/load/:id', async (req, res) => {
             return res.status(404).json({ success: false, error: 'Spielstand nicht gefunden!' });
         }
         
-        // Spielstand und Spieler in den aktiven Speicher laden
         gameState = record.gameState;
         players = record.players;
         
-        // Alle verbundenen Clients (Host & Spieler) über den wiederhergestellten Zustand informieren
         io.emit('players_updated', players);
         io.emit('game_state_updated', gameState);
         

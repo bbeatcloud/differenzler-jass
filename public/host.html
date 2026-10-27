@@ -2,475 +2,321 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Host Kontrollblatt - Srv-Differenzler-01</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Differenzler-Jass - Kontrollblatt (Host)</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { background-color: #f0fdf4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 24px; margin: 0; color: #14532d; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 24px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #dcfce7; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px; }
-        .title { font-size: 28px; font-weight: 900; margin: 0; color: #14532d; }
-        .subtitle { font-size: 13px; color: #6b7280; margin: 4px 0 0 0; }
+        body { background-color: #f0fdf4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; color: #14532d; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #dcfce7; }
         
-        .btn-group { display: flex; gap: 12px; background: #f9fafb; padding: 8px; border-radius: 12px; border: 1px solid #e5e7eb; }
-        button { padding: 12px 24px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; font-size: 15px; }
-        #btn-host-frei { background-color: #166534; color: white; }
-        #btn-host-sperren { background-color: #dc2626; color: white; }
-        .btn-inactive { opacity: 0.3; }
-        .btn-active { box-shadow: 0 0 0 4px rgba(22, 101, 52, 0.4); transform: scale(1.02); font-weight: 900; }
-        .btn-active-red { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.4); transform: scale(1.02); font-weight: 900; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        h1 { margin: 0; font-size: 26px; font-weight: 900; color: #14532d; }
+        .sub-title { font-size: 12px; color: #4b5563; font-weight: bold; margin-top: 4px; }
         
-        .lobby-bar { display: grid; grid-template-columns: 1fr 3fr; gap: 16px; margin-bottom: 24px; }
-        .code-box { background: linear-gradient(135deg, #166534, #064e3b); color: white; padding: 16px; border-radius: 12px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
-        .code-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; font-weight: bold; }
-        .code-value { font-size: 28px; font-weight: 900; letter-spacing: 2px; }
-        
-        .slots-box { background: #f9fafb; border: 1px solid #e5e7eb; padding: 16px; border-radius: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        .slot { background: white; border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
-        .slot-active { background-color: #f0fdf4; border-color: #bbf7d0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .dot { width: 12px; height: 12px; border-radius: 50%; background-color: #d1d5db; }
-        .dot-active { background-color: #22c55e; box-shadow: 0 0 8px #22c55e; }
-        .slot-lbl { font-size: 10px; text-transform: uppercase; color: #9ca3af; font-weight: bold; display: block; }
-        .slot-name { font-size: 14px; font-weight: bold; color: #374151; }
-        .slot-name-active { color: #166534; font-weight: 900; }
-        
-        .passe-box { border: 2px solid #e5e7eb; padding: 16px; border-radius: 16px; background: white; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-        .passe-box-active { border-color: #22c55e; box-shadow: 0 0 0 4px #dcfce7; }
-        .passe-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .passe-title { font-size: 18px; font-weight: 900; color: #166534; margin: 0; }
-        .badge { background: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 99px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
-        
-        table { width: 100%; border-collapse: collapse; text-align: center; border-radius: 8px; overflow: hidden; margin-bottom: 8px; font-size: 14px; }
-        th, td { border: 1px solid #e5e7eb; padding: 8px; }
-        th { background-color: #111827; color: white; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .sub-th { background-color: #f3f4f6; color: #4b5563; font-size: 10px; }
-        .player-row td { font-weight: 500; }
-        .player-name-cell { font-weight: bold; text-align: left; padding-left: 12px; background: #f9fafb; color: #374151; }
-        .diff-cell { font-weight: bold; background-color: #fef9c3; color: #713f12; }
-        .total-cell { font-weight: bold; background-color: #f3f4f6; }
-        
-        .total-row { background-color: #f3f4f6; font-weight: bold; color: #1f2937; }
-        .sum-actual-cell { font-size: 14px; font-weight: 900; }
-        .sum-red { background-color: #fca5a5 !important; color: #991b1b !important; animation: pulse 1.5s infinite; }
-        .sum-green { background-color: #dcfce7 !important; color: #166534 !important; }
-        
-        .rangliste { background: linear-gradient(to bottom, #f9fafb, #f3f4f6); padding: 20px; border-radius: 16px; border: 2px solid #e5e7eb; margin-top: 32px; }
-        .rl-title-box { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-        .rl-table th { background-color: #111827; }
-        .rl-total { background-color: #eab308 !important; font-size: 18px; font-weight: 900; color: black; }
-        .podium { background-color: #ecfdf5; font-weight: bold; }
-        
-        .next-btn-box { text-align: center; margin-top: 24px; }
-        .btn-next { background-color: #166534; color: white; padding: 14px 40px; font-size: 18px; font-weight: 900; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); cursor: pointer; }
-        .btn-next:hover { background-color: #14532d; }
-        
-        /* Modal Dialog Styles */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-card { background: white; padding: 24px; border-radius: 16px; width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid #dcfce7; }
-        .modal-title { font-size: 20px; font-weight: 900; color: #14532d; margin-top: 0; margin-bottom: 16px; text-align: center; }
-        .modal-input { width: 100%; padding: 10px; margin-bottom: 12px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
-        .modal-btn { width: 100%; padding: 12px; background-color: #166534; color: white; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; font-size: 15px; }
-        .modal-btn:hover { background-color: #14532d; }
-        .modal-error { color: #dc2626; font-size: 13px; font-weight: bold; text-align: center; margin-top: 8px; margin-bottom: 0; }
+        .host-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .btn { padding: 10px 16px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; font-size: 14px; color: white; transition: background 0.2s; }
+        .btn-green { background-color: #166534; } .btn-green:hover { background-color: #14532d; }
+        .btn-red { background-color: #991b1b; } .btn-red:hover { background-color: #7f1d1d; }
+        .btn-blue { background-color: #1d4ed8; } .btn-blue:hover { background-color: #1e40af; }
+        .btn-gray { background-color: #4b5563; } .btn-gray:hover { background-color: #374151; }
+        .btn-lock-active { background-color: #b91c1c !important; }
 
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .info-panel { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .room-box { background: #166534; color: white; padding: 12px 20px; border-radius: 10px; font-weight: bold; font-size: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 120px; }
+        .room-code { font-size: 24px; font-weight: 900; letter-spacing: 2px; }
+        
+        .player-slot { background: #f9fafb; border: 2px solid #e5e7eb; padding: 10px 15px; border-radius: 10px; flex: 1; min-width: 180px; display: flex; align-items: center; justify-content: space-between; font-weight: bold; }
+        .player-status-dot { width: 12px; height: 12px; border-radius: 50%; background: #d1d5db; display: inline-block; }
+        .connected { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.6); }
+
+        /* TABELLE */
+        .passe-container { margin-bottom: 30px; border: 2px solid #bbf7d0; border-radius: 12px; overflow: hidden; background: #fff; }
+        .passe-header { background: #dcfce7; padding: 10px 15px; font-size: 18px; font-weight: 900; color: #166534; display: flex; justify-content: space-between; align-items: center; }
+        
+        table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
+        th, td { border: 1px solid #e5e7eb; padding: 8px; }
+        th { background: #111827; color: white; font-weight: bold; }
+        .col-player { text-align: left; padding-left: 12px; font-weight: bold; width: 15%; background: #f9fafb; }
+        .col-total { font-weight: 900; background: #f3f4f6; }
+        .bg-spiel-th { background: #1e293b; }
+        .bg-sum { background: #dcfce7; font-weight: 900; }
+        .highlight-cell { background-color: #fef9c3; font-weight: bold; }
+
+        /* MODAL FÜR SPIELSTÄNDE LADEN */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 24px; border-radius: 12px; width: 500px; max-width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 15px; }
+        .modal-header h3 { margin: 0; color: #14532d; }
+        .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #6b7280; }
+        .history-item { padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; background: #f9fafb; transition: background 0.2s; }
+        .history-item:hover { background: #f3f4f6; }
     </style>
 </head>
 <body>
 
-    <!-- LOGIN MODAL (Initial ausgeblendet, wird beim Öffnen von /host gezeigt) -->
-    <div id="auth-modal" class="modal-overlay">
-        <div class="modal-card">
-            <h2 class="modal-title">Host Login</h2>
-            <p style="font-size: 13px; color: #6b7280; text-align: center; margin-top: 0; margin-bottom: 16px;">Bitte gib das Host-Passwort ein, um das Kontrollblatt zu öffnen.</p>
-            <input id="auth-password" type="password" placeholder="Passwort eingeben" class="modal-input" onkeydown="if(event.key==='Enter') verifyHostPassword()">
-            <button onclick="verifyHostPassword()" class="modal-btn">Anmelden</button>
-            <p id="auth-error" class="modal-error"></p>
-        </div>
-    </div>
-
-    <!-- EINSTELLUNGEN MODAL -->
-    <div id="settings-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-card" style="width: 400px;">
-            <h2 class="modal-title">Einstellungen</h2>
-            <div style="margin-bottom: 12px;">
-                <label style="font-size: 12px; font-weight: bold; color: #374151; display: block; margin-bottom: 4px;">Aktuelles Passwort (Pflicht):</label>
-                <input id="set-current-pass" type="password" placeholder="Aktuelles Passwort" class="modal-input">
-            </div>
-            <div style="margin-bottom: 12px;">
-                <label style="font-size: 12px; font-weight: bold; color: #374151; display: block; margin-bottom: 4px;">Neues Passwort (optional):</label>
-                <input id="set-new-pass" type="password" placeholder="Neues Passwort (min. 4 Zeichen)" class="modal-input">
-            </div>
-            <div style="margin-bottom: 16px;">
-                <label style="font-size: 12px; font-weight: bold; color: #374151; display: block; margin-bottom: 4px;">Neuer Raum-Code (4-6 Zeichen):</label>
-                <input id="set-new-code" type="text" placeholder="z. B. JASS" maxlength="6" class="modal-input" style="text-transform: uppercase;">
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="closeSettingsModal()" style="width: 50%; padding: 12px; background-color: #6b7280; color: white; font-weight: bold; border-radius: 8px; border: none; cursor: pointer;">Abbrechen</button>
-                <button onclick="saveSettings()" style="width: 50%; padding: 12px; background-color: #166534; color: white; font-weight: bold; border-radius: 8px; border: none; cursor: pointer;">Speichern</button>
-            </div>
-            <p id="settings-error" class="modal-error"></p>
-        </div>
-    </div>
-
-    <div class="container" id="main-content" style="display: none;">
-        <!-- Header -->
-        <div class="header">
+    <div class="container">
+        <div class="top-bar">
             <div>
-                <h1 class="title">Differenzler-Jass Kontrollblatt</h1>
-                <p class="subtitle">Zentrale Steuerung & Auswertung — Srv-Differenzler-01</p>
+                <h1>Differenzler-Jass Kontrollblatt</h1>
+                <div class="sub-title">Zentrale Steuerung & Auswertung — Srv-Differenzler-01</div>
             </div>
-            <div class="btn-group">
-                <button id="btn-host-frei" onclick="setHostState('Frei')">Host Frei</button>
-                <button id="btn-host-sperren" onclick="setHostState('Sperren')">Host sperren</button>
-            </div>
-        </div>
-
-        <!-- Action Bar: Reset, Export, DB Save & Einstellungen -->
-        <div style="margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-            <button onclick="resetTable()" style="background-color: #b91c1c; color: white; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer;">Tisch zurücksetzen</button>
-            <button onclick="exportTableToCSV()" style="background-color: #2b8a3e; color: white; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer;">📥 Als Excel/CSV exportieren</button>
-            <button onclick="saveToMongoDB()" style="background-color: #1c7ed6; color: white; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer;">☁️ In Datenbank speichern</button>
-            <button onclick="openSettingsModal()" style="background-color: #4b5563; color: white; padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-left: auto;">⚙️ Einstellungen</button>
-        </div>
-
-        <div class="lobby-bar">
-            <div class="code-box">
-                <span class="code-title">Raum-Code</span>
-                <span class="code-value" id="host-room-code">JASS</span>
-            </div>
-            <div class="slots-box">
-                <div class="slot" id="slot-Spieler1"><span class="dot" id="dot-Spieler1"></span><div><span class="slot-lbl">Spieler 1</span><span class="slot-name" id="name-Spieler1">Warten...</span></div></div>
-                <div class="slot" id="slot-Spieler2"><span class="dot" id="dot-Spieler2"></span><div><span class="slot-lbl">Spieler 2</span><span class="slot-name" id="name-Spieler2">Warten...</span></div></div>
-                <div class="slot" id="slot-Spieler3"><span class="dot" id="dot-Spieler3"></span><div><span class="slot-lbl">Spieler 3</span><span class="slot-name" id="name-Spieler3">Warten...</span></div></div>
-                <div class="slot" id="slot-Spieler4"><span class="dot" id="dot-Spieler4"></span><div><span class="slot-lbl">Spieler 4</span><span class="slot-name" id="name-Spieler4">Warten...</span></div></div>
+            <div class="host-controls">
+                <button id="btn-lock-toggle" onclick="toggleHostState()" class="btn btn-green">Host Freigeben</button>
+                <button onclick="resetTable()" class="btn btn-red">Tisch zurücksetzen</button>
+                <button onclick="saveToDatabase()" class="btn btn-blue">In Datenbank speichern</button>
+                <button onclick="openHistoryModal()" class="btn btn-gray">📁 Spielstand laden</button>
             </div>
         </div>
 
-        <!-- Jass-Tabellen -->
-        <div id="passen-container"></div>
-
-        <!-- Rangliste -->
-        <div class="rangliste">
-            <div class="rl-title-box">
-                <span style="font-size: 24px;">🏆</span>
-                <h2 style="margin:0; font-size:22px; font-weight:900;">Aktuelle Rangliste</h2>
+        <div class="info-panel">
+            <div class="room-box">
+                <span style="font-size: 11px; text-transform: uppercase;">Raum-Code</span>
+                <span id="display-room-code" class="room-code">JASS</span>
             </div>
-            <table class="rl-table">
-                <thead>
-                    <tr>
-                        <th>Rang</th>
-                        <th style="text-align: left; padding-left:12px;">Spieler</th>
-                        <th>Passe 1</th>
-                        <th>Passe 2</th>
-                        <th>Passe 3</th>
-                        <th>Passe 4</th>
-                        <th style="background-color: #eab308; color: black;">Total</th>
-                    </tr>
-                </thead>
-                <tbody id="rangliste-body"></tbody>
-            </table>
+            <div class="player-slot"><span>Spieler 1: <strong id="p1-name">Warten...</strong></span><span id="p1-dot" class="player-status-dot"></span></div>
+            <div class="player-slot"><span>Spieler 2: <strong id="p2-name">Warten...</strong></span><span id="p2-dot" class="player-status-dot"></span></div>
+            <div class="player-slot"><span>Spieler 3: <strong id="p3-name">Warten...</strong></span><span id="p3-dot" class="player-status-dot"></span></div>
+            <div class="player-slot"><span>Spieler 4: <strong id="p4-name">Warten...</strong></span><span id="p4-dot" class="player-status-dot"></span></div>
         </div>
 
-        <!-- Weiter-Button -->
-        <div class="next-btn-box">
-            <button class="btn-next" onclick="nextStep()">Nächstes Spiel freischalten ➔</button>
+        <!-- TABELLEN FÜR PASSE 1 BIS 4 -->
+        <div id="scorecards-container"></div>
+    </div>
+
+    <!-- MODAL FÜR GESPEICHERTE SPIELSTÄNDE -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Gespeicherte Spielstände laden</h3>
+                <button class="close-btn" onclick="closeHistoryModal()">&times;</button>
+            </div>
+            <div id="history-list">
+                <p style="text-align: center; color: #6b7280;">Lade Spielstände...</p>
+            </div>
         </div>
     </div>
 
     <script>
-        const socket = io();
-        let currentPlayers = {};
+        const socket = io(window.location.origin);
         let currentGameState = null;
-
-        // Passwort-Authentifizierung beim Öffnen
-        function verifyHostPassword() {
-            const pass = document.getElementById('auth-password').value;
-            fetch('/api/host/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: pass })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('auth-modal').style.display = 'none';
-                    document.getElementById('main-content').style.display = 'block';
-                } else {
-                    document.getElementById('auth-error').innerText = data.error;
-                }
-            })
-            .catch(err => {
-                document.getElementById('auth-error').innerText = 'Verbindungsfehler zum Server.';
-            });
-        }
-
-        // Einstellungen Modal öffnen/schliessen
-        function openSettingsModal() {
-            document.getElementById('set-current-pass').value = '';
-            document.getElementById('set-new-pass').value = '';
-            document.getElementById('set-new-code').value = document.getElementById('host-room-code').innerText;
-            document.getElementById('settings-error').innerText = '';
-            document.getElementById('settings-modal').style.display = 'flex';
-        }
-
-        function closeSettingsModal() {
-            document.getElementById('settings-modal').style.display = 'none';
-        }
-
-        // Einstellungen speichern
-        function saveSettings() {
-            const currentPassword = document.getElementById('set-current-pass').value;
-            const newPassword = document.getElementById('set-new-pass').value;
-            const newRoomCode = document.getElementById('set-new-code').value;
-
-            if (!currentPassword) {
-                document.getElementById('settings-error').innerText = 'Bitte aktuelles Passwort eingeben.';
-                return;
-            }
-
-            fetch('/api/host/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ currentPassword, newPassword, newRoomCode })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert('✅ ' + data.message);
-                    if (data.roomCode) {
-                        document.getElementById('host-room-code').innerText = data.roomCode;
-                    }
-                    closeSettingsModal();
-                } else {
-                    document.getElementById('settings-error').innerText = data.error;
-                }
-            })
-            .catch(err => {
-                document.getElementById('settings-error').innerText = 'Fehler beim Speichern der Einstellungen.';
-            });
-        }
+        let currentPlayers = {};
+        let hostState = "Frei";
 
         socket.on('init', (data) => {
+            hostState = data.hostState;
             currentPlayers = data.players || {};
             currentGameState = data.gameState;
-            if (data.ROOM_CODE) {
-                document.getElementById('host-room-code').innerText = data.ROOM_CODE;
-            }
-            updateLobbyStatus(currentPlayers);
-            renderAll();
-            handleHostState(data.hostState);
+            if(data.ROOM_CODE) document.getElementById('display-room-code').innerText = data.ROOM_CODE;
+            updateHostUI();
         });
 
         socket.on('room_code_updated', (code) => {
-            const codeEl = document.getElementById('host-room-code');
-            if (codeEl) codeEl.innerText = code;
+            document.getElementById('display-room-code').innerText = code;
         });
 
-        socket.on('host_state_changed', handleHostState);
-        
-        socket.on('game_state_updated', (state) => { 
-            currentGameState = state;
-            renderAll(); 
-        });
-        
-        socket.on('players_updated', (p) => { 
-            currentPlayers = p || {}; 
-            updateLobbyStatus(currentPlayers);
-            renderAll();
+        socket.on('players_updated', (players) => {
+            currentPlayers = players;
+            updatePlayersUI();
         });
 
-        function setHostState(s) { socket.emit('toggle_host', s); }
-        function nextStep() { socket.emit('next_step'); }
+        socket.on('game_state_updated', (gs) => {
+            currentGameState = gs;
+            renderScorecards();
+        });
+
+        socket.on('host_state_changed', (state) => {
+            hostState = state;
+            updateHostUI();
+        });
+
+        function toggleHostState() {
+            let newState = (hostState === "Sperren") ? "Frei" : "Sperren";
+            socket.emit('toggle_host', newState);
+        }
+
+        function updateHostUI() {
+            const btn = document.getElementById('btn-lock-toggle');
+            if (hostState === "Sperren") {
+                btn.innerText = "Host Gesperrt";
+                btn.className = "btn btn-red btn-lock-active";
+            } else {
+                btn.innerText = "Host Freigeben";
+                btn.className = "btn btn-green";
+            }
+            updatePlayersUI();
+            if(currentGameState) renderScorecards();
+        }
+
+        function updatePlayersUI() {
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`p${i}-name`).innerText = "Warten...";
+                document.getElementById(`p${i}-dot`).className = "player-status-dot";
+            }
+            for (let token in currentPlayers) {
+                let p = currentPlayers[token];
+                let num = p.position.replace('Spieler', '');
+                document.getElementById(`p${num}-name`).innerText = p.name;
+                if (p.socketId) {
+                    document.getElementById(`p${num}-dot`).className = "player-status-dot connected";
+                }
+            }
+        }
+
         function resetTable() {
-            if(confirm("Möchtest du wirklich alle Spieler vom Tisch entfernen?")) {
+            if(confirm("Möchtest du den Tisch wirklich komplett zurücksetzen?")) {
                 socket.emit('reset_table');
             }
         }
 
-        // --- EXCEL/CSV EXPORT & MONGODB SAVE ---
-        function exportTableToCSV(filename = 'jass_spielstand.csv') {
-            let csv = [];
-            const rows = document.querySelectorAll("table tr");
-            
-            for (let i = 0; i < rows.length; i++) {
-                let row = [], cols = rows[i].querySelectorAll("td, th");
-                for (let j = 0; j < cols.length; j++) {
-                    row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
-                }
-                csv.push(row.join(";")); 
-            }
-
-            const csvFile = new Blob(["\ufeff" + csv.join("\n")], { type: "text/csv;charset=utf-8;" });
-            const downloadLink = document.createElement("a");
-            downloadLink.download = filename;
-            downloadLink.href = window.URL.createObjectURL(csvFile);
-            downloadLink.style.display = "none";
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
+        function saveToDatabase() {
+            fetch('/api/games/save', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => alert(data.message || 'Erfolgreich gespeichert!'))
+                .catch(err => alert('Fehler beim Speichern.'));
         }
 
-        function saveToMongoDB() {
-            fetch('/api/games/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({})
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    alert("✅ " + data.message);
-                } else {
-                    alert("❌ Fehler: " + data.error);
-                }
-            })
-            .catch(err => {
-                console.error('Fehler:', err);
-                alert("❌ Verbindung zum Server fehlgeschlagen.");
-            });
+        // --- HISTORIE / LADEN FUNKTIONEN ---
+        function openHistoryModal() {
+            document.getElementById('history-modal').style.display = 'flex';
+            const listContainer = document.getElementById('history-list');
+            listContainer.innerHTML = '<p style="text-align: center; color: #6b7280;">Lade Spielstände...</p>';
+
+            fetch('/api/games/history')
+                .then(res => res.json())
+                .then(games => {
+                    if (!games || games.length === 0) {
+                        listContainer.innerHTML = '<p style="text-align: center; color: #6b7280;">Keine gespeicherten Partien gefunden.</p>';
+                        return;
+                    }
+                    let html = '';
+                    games.forEach(g => {
+                        let dateStr = new Date(g.createdAt).toLocaleString('de-CH');
+                        let playerNames = Object.values(g.players || {}).map(pl => pl.name).join(', ') || 'Keine Spieler';
+                        html += `
+                            <div class="history-item">
+                                <div>
+                                    <strong style="font-size: 14px; color: #14532d;">${dateStr}</strong><br>
+                                    <span style="font-size: 12px; color: #4b5563;">Spieler: ${playerNames}</span>
+                                </div>
+                                <button class="btn btn-green" style="padding: 6px 12px; font-size: 12px;" onclick="loadGame('${g._id}')">Laden</button>
+                            </div>
+                        `;
+                    });
+                    listContainer.innerHTML = html;
+                })
+                .catch(err => {
+                    listContainer.innerHTML = '<p style="text-align: center; color: #dc2626;">Fehler beim Laden der Historie.</p>';
+                });
         }
 
-        function updateLobbyStatus(players) {
-            for(let i = 1; i <= 4; i++) {
-                const nameEl = document.getElementById(`name-Spieler${i}`);
-                const dotEl = document.getElementById(`dot-Spieler${i}`);
-                const slotEl = document.getElementById(`slot-Spieler${i}`);
-                if(nameEl) {
-                    nameEl.innerText = "Warten...";
-                    nameEl.className = "slot-name";
-                }
-                if(dotEl) dotEl.className = "dot";
-                if(slotEl) slotEl.className = "slot";
-            }
+        function closeHistoryModal() {
+            document.getElementById('history-modal').style.display = 'none';
+        }
 
-            if(!players) return;
-            for(let id in players) {
-                const pos = players[id].position;
-                const name = players[id].name;
-                const nameEl = document.getElementById(`name-${pos}`);
-                const dotEl = document.getElementById(`dot-${pos}`);
-                const slotEl = document.getElementById(`slot-${pos}`);
-                
-                if(nameEl) {
-                    nameEl.innerText = name;
-                    nameEl.className = "slot-name slot-name-active";
-                    if(dotEl) dotEl.className = "dot dot-active";
-                    if(slotEl) slotEl.className = "slot slot-active";
-                }
+        function loadGame(id) {
+            if (confirm("Möchtest du diesen Spielstand wirklich laden? Aktuelle Eingaben werden überschrieben.")) {
+                fetch(`/api/games/load/${id}`, { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Spielstand erfolgreich geladen!');
+                            closeHistoryModal();
+                        } else {
+                            alert('Fehler: ' + (data.error || 'Unbekannt'));
+                        }
+                    })
+                    .catch(err => alert('Fehler beim Wiederherstellen des Spielstands.'));
             }
         }
 
-        function handleHostState(state) {
-            const btnFrei = document.getElementById('btn-host-frei');
-            const btnSperren = document.getElementById('btn-host-sperren');
-            if(state === "Frei") {
-                btnFrei.className = "btn-active";
-                btnSperren.className = "btn-inactive";
-            } else {
-                btnFrei.className = "btn-inactive";
-                btnSperren.className = "btn-active-red";
-            }
-        }
+        function renderScorecards() {
+            if (!currentGameState) return;
+            const container = document.getElementById('scorecards-container');
+            let html = '';
 
-        function renderAll() {
-            if(!currentGameState) return;
-            const container = document.getElementById('passen-container');
-            container.innerHTML = "";
-            let names = { Spieler1: "Spieler 1", Spieler2: "Spieler 2", Spieler3: "Spieler 3", Spieler4: "Spieler 4" };
-            for(let id in currentPlayers) { names[currentPlayers[id].position] = currentPlayers[id].name; }
+            let pNames = { Spieler1: "Spieler 1", Spieler2: "Spieler 2", Spieler3: "Spieler 3", Spieler4: "Spieler 4" };
+            for (let token in currentPlayers) {
+                pNames[currentPlayers[token].position] = currentPlayers[token].name;
+            }
 
             for (let p = 1; p <= 4; p++) {
-                let isPasseAktiv = currentGameState.currentPasse === p;
-                let activeClass = isPasseAktiv ? 'passe-box-active' : '';
-                
-                let html = `
-                <div class="passe-box ${activeClass}">
+                let isCurrentPasse = (currentGameState.currentPasse === p);
+                html += `
+                <div class="passe-container">
                     <div class="passe-header">
-                        <h3 class="passe-title">Passe ${p}</h3>
-                        ${isPasseAktiv ? '<span class="badge">Aktive Passe</span>' : ''}
+                        <span>Passe ${p}</span>
+                        <span style="font-size: 13px; font-weight: normal; color: ${isCurrentPasse ? '#166534' : '#6b7280'};">${isCurrentPasse ? '🟢 Aktive Passe' : ''}</span>
                     </div>
                     <table>
                         <thead>
                             <tr>
-                                <th rowspan="2" style="width: 16%;">Spieler</th>
-                                <th colspan="3">Spiel 1</th>
-                                <th colspan="3">Spiel 2</th>
-                                <th colspan="3">Spiel 3</th>
-                                <th colspan="3">Spiel 4</th>
-                                <th rowspan="2" style="width: 8%;">Total</th>
-                            </tr>
+                                <th class="col-player">Spieler</th>
+                `;
+                for (let s = 1; s <= 4; s++) {
+                    html += `<th colspan="3" class="bg-spiel-th">Spiel ${s}</th>`;
+                }
+                html += `<th>Total</th></tr>
                             <tr>
-                                <th class="sub-th">Gesch.</th><th class="sub-th">Spiel</th><th class="sub-th">Diff.</th>
-                                <th class="sub-th">Gesch.</th><th class="sub-th">Spiel</th><th class="sub-th">Diff.</th>
-                                <th class="sub-th">Gesch.</th><th class="sub-th">Spiel</th><th class="sub-th">Diff.</th>
-                                <th class="sub-th">Gesch.</th><th class="sub-th">Spiel</th><th class="sub-th">Diff.</th>
-                            </tr>
+                                <th class="col-player"></th>`;
+                for (let s = 1; s <= 4; s++) {
+                    html += `<th>Gesch.</th><th>Spiel</th><th>Diff.</th>`;
+                }
+                html += `<th>Passe ${p}</th></tr>
                         </thead>
                         <tbody>`;
 
-                let passeTotals = { Spieler1: 0, Spieler2: 0, Spieler3: 0, Spieler4: 0 };
-
-                for (let pos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) {
-                    html += `<tr class="player-row"><td class="player-name-cell">${names[pos]}</td>`;
+                let positions = ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4'];
+                positions.forEach(pos => {
+                    let name = pNames[pos];
+                    html += `<tr><td class="col-player">${name}</td>`;
+                    
+                    let totalDiffPasse = 0;
                     for (let s = 1; s <= 4; s++) {
                         let cell = currentGameState.matrix[p][s];
-                        let est = cell.estimates[pos] !== null ? (cell.hidden[pos] ? "OK" : cell.estimates[pos]) : "";
-                        let act = cell.actual[pos] !== null ? cell.actual[pos] : "";
-                        let diff = cell.diff[pos] !== null ? cell.diff[pos] : "";
-                        
-                        if(!cell.hidden[pos] && cell.diff[pos] !== null) { passeTotals[pos] += cell.diff[pos]; }
+                        let est = cell.estimates[pos];
+                        let act = cell.actual[pos];
+                        let diff = cell.diff[pos];
 
-                        html += `<td>${est}</td><td>${act}</td><td class="diff-cell">${diff}</td>`;
+                        let estDisplay = est !== null ? est : '';
+                        let actDisplay = act !== null ? act : '';
+                        let diffDisplay = diff !== null ? diff : '';
+
+                        if (est !== null && act === null) {
+                            estDisplay = "OK";
+                        }
+
+                        let isCellActive = (currentGameState.currentPasse === p && currentGameState.currentSpiel === s);
+                        let cellClass = isCellActive ? 'highlight-cell' : '';
+
+                        html += `
+                            <td class="${cellClass}">${estDisplay}</td>
+                            <td class="${cellClass}">${actDisplay}</td>
+                            <td class="${cellClass}">${diffDisplay}</td>
+                        `;
+                        if (diff !== null) totalDiffPasse += diff;
                     }
-                    html += `<td class="total-cell">${passeTotals[pos]}</td></tr>`;
-                }
+                    html += `<td class="col-total">${totalDiffPasse}</td></tr>`;
+                });
 
-                html += `<tr class="total-row"><td>Total</td>`;
+                // Zeile für die Summe der gespielten Punkte pro Spiel (sollte 157 ergeben)
+                html += `<tr class="bg-sum"><td class="col-player">Total Punkte (157)</td>`;
                 for (let s = 1; s <= 4; s++) {
                     let sumAct = 0;
-                    let hasData = false;
-
-                    for (let pos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) { 
-                        if (currentGameState.matrix[p][s].actual[pos] !== null) {
-                            sumAct += currentGameState.matrix[p][s].actual[pos];
-                            hasData = true;
+                    let count = 0;
+                    positions.forEach(pos => {
+                        let act = currentGameState.matrix[p][s].actual[pos];
+                        if (act !== null) {
+                            sumAct += act;
+                            count++;
                         }
-                    }
-
-                    let isRed = sumAct !== 157 && hasData; 
-                    let cl = isRed ? 'sum-actual-cell sum-red' : (hasData ? 'sum-actual-cell sum-green' : '');
-
-                    html += `<td colspan="2" class="${cl}">${hasData ? sumAct : ''}</td><td style="background-color: #f3f4f6;"></td>`;
+                    });
+                    html += `<td colspan="3" style="text-align: center; color: ${sumAct === 157 ? '#166534' : '#b91c1c'};">${count > 0 ? sumAct : '-'}</td>`;
                 }
-                html += `<td style="background-color: #e5e7eb;"></td></tr></tbody></table></div>`;
-                container.innerHTML += html;
+                html += `<td></td></tr>`;
+
+                html += `</tbody></table></div>`;
             }
-
-            const rlBody = document.getElementById('rangliste-body');
-            rlBody.innerHTML = "";
-            let finalScores = ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4'].map(pos => {
-                let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
-                for(let i=1; i<=4; i++) p1 += currentGameState.matrix[1][i].diff[pos] || 0;
-                for(let i=1; i<=4; i++) p2 += currentGameState.matrix[2][i].diff[pos] || 0;
-                for(let i=1; i<=4; i++) p3 += currentGameState.matrix[3][i].diff[pos] || 0;
-                for(let i=1; i<=4; i++) p4 += currentGameState.matrix[4][i].diff[pos] || 0;
-                return { name: names[pos], p1, p2, p3, p4, total: (p1+p2+p3+p4) };
-            });
-
-            finalScores.sort((a, b) => a.total - b.total);
-            finalScores.forEach((row, idx) => {
-                let podiumClass = idx === 0 ? 'podium' : '';
-                rlBody.innerHTML += `
-                    <tr class="${podiumClass}">
-                        <td style="font-weight:900;">${idx + 1}. Rang</td>
-                        <td style="text-align: left; padding-left:12px; font-weight:bold;">${row.name}</td>
-                        <td>${row.p1}</td>
-                        <td>${row.p2}</td>
-                        <td>${row.p3}</td>
-                        <td>${row.p4}</td>
-                        <td class="rl-total">${row.total}</td>
-                    </tr>`;
-            });
+            container.innerHTML = html;
         }
     </script>
 </body>

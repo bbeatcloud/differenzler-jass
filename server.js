@@ -107,6 +107,31 @@ app.get('/api/games/history', async (req, res) => {
     }
 });
 
+// Einen spezifischen Spielstand aus der Historie laden und wiederherstellen
+app.post('/api/games/load/:id', async (req, res) => {
+    try {
+        const gameId = req.params.id;
+        const record = await GameRecord.findById(gameId);
+        
+        if (!record) {
+            return res.status(404).json({ success: false, error: 'Spielstand nicht gefunden!' });
+        }
+        
+        // Spielstand und Spieler in den aktiven Speicher laden
+        gameState = record.gameState;
+        players = record.players;
+        
+        // Alle verbundenen Clients (Host & Spieler) über den wiederhergestellten Zustand informieren
+        io.emit('players_updated', players);
+        io.emit('game_state_updated', gameState);
+        
+        res.json({ success: true, message: 'Spielstand erfolgreich wiederhergestellt!' });
+    } catch (err) {
+        console.error('Fehler beim Laden des Spielstands:', err);
+        res.status(500).json({ success: false, error: 'Laden fehlgeschlagen' });
+    }
+});
+
 // --- SPIEL-STATUS & VARIABLEN ---
 let hostState = "Frei"; 
 let players = {}; // Map: token -> { name, position, socketId }

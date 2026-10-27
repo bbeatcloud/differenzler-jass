@@ -31,15 +31,10 @@
 
         /* TABELLEN DESIGN & PASSE-UNTERSCHEIDUNG */
         .passe-container { margin-bottom: 30px; border-radius: 12px; overflow: hidden; background: #fff; transition: all 0.3s; }
-        
-        /* Inaktive Passe: Dezent grau umrandet und leicht abgedunkelt */
         .passe-inactive { border: 2px solid #e5e7eb; opacity: 0.75; }
         .passe-inactive .passe-header { background: #f3f4f6; color: #374151; }
-
-        /* Aktive Passe: Kräftig grün umrandet, hervorgehoben */
         .passe-active { border: 3px solid #166534; box-shadow: 0 10px 15px -3px rgba(22, 101, 52, 0.15); opacity: 1; }
         .passe-active .passe-header { background: #dcfce7; color: #166534; }
-
         .passe-header { padding: 12px 18px; font-size: 18px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; }
         
         table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
@@ -50,6 +45,12 @@
         .bg-spiel-th { background: #1e293b; }
         .bg-sum { background: #dcfce7; font-weight: 900; }
         .highlight-cell { background-color: #fef9c3; font-weight: bold; }
+
+        /* RANGLISTE DESIGN */
+        .leaderboard-box { margin-top: 30px; border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; }
+        .leaderboard-header { background: #fef08a; padding: 12px 18px; font-size: 18px; font-weight: 900; color: #854d0e; display: flex; align-items: center; gap: 8px; }
+        .col-rank { width: 15%; font-weight: bold; background: #f9fafb; text-align: center; }
+        .col-lb-total { font-weight: 900; background: #fef9c3; text-align: center; }
 
         /* MODAL FÜR SPIELSTÄNDE LADEN */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
@@ -90,6 +91,9 @@
 
         <!-- TABELLEN FÜR PASSE 1 BIS 4 -->
         <div id="scorecards-container"></div>
+
+        <!-- AKTUELLE RANGLISTE -->
+        <div id="leaderboard-container"></div>
     </div>
 
     <!-- MODAL FÜR GESPEICHERTE SPIELSTÄNDE -->
@@ -130,7 +134,7 @@
 
         socket.on('game_state_updated', (gs) => {
             currentGameState = gs;
-            renderScorecards();
+            renderAll();
         });
 
         socket.on('host_state_changed', (state) => {
@@ -153,7 +157,7 @@
                 btn.className = "btn btn-green";
             }
             updatePlayersUI();
-            if(currentGameState) renderScorecards();
+            if(currentGameState) renderAll();
         }
 
         function updatePlayersUI() {
@@ -227,7 +231,7 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            alert('Spielstand erfolgreich geladen!');
+                            alert('Spielstand erfolgreich wiederhergestellt!');
                             closeHistoryModal();
                         } else {
                             alert('Fehler: ' + (data.error || 'Unbekannt'));
@@ -235,6 +239,11 @@
                     })
                     .catch(err => alert('Fehler beim Wiederherstellen des Spielstands.'));
             }
+        }
+
+        function renderAll() {
+            renderScorecards();
+            renderLeaderboard();
         }
 
         function renderScorecards() {
@@ -325,6 +334,78 @@
 
                 html += `</tbody></table></div>`;
             }
+            container.innerHTML = html;
+        }
+
+        function renderLeaderboard() {
+            if (!currentGameState) return;
+            const container = document.getElementById('leaderboard-container');
+            
+            let pNames = { Spieler1: "Spieler 1", Spieler2: "Spieler 2", Spieler3: "Spieler 3", Spieler4: "Spieler 4" };
+            for (let token in currentPlayers) {
+                pNames[currentPlayers[token].position] = currentPlayers[token].name;
+            }
+
+            let positions = ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4'];
+            let playerStats = positions.map(pos => {
+                let name = pNames[pos];
+                let passeTotals = [0, 0, 0, 0];
+                let grandTotal = 0;
+
+                for (let p = 1; p <= 4; p++) {
+                    let pDiffSum = 0;
+                    for (let s = 1; s <= 4; s++) {
+                        let diff = currentGameState.matrix[p][s].diff[pos];
+                        if (diff !== null) {
+                            pDiffSum += diff;
+                        }
+                    }
+                    passeTotals[p-1] = pDiffSum;
+                    grandTotal += pDiffSum;
+                }
+
+                return { pos, name, passeTotals, grandTotal };
+            });
+
+            // Nach Gesamtdifferenz aufsteigend sortieren (weniger Differenz = bester Rang)
+            playerStats.sort((a, b) => a.grandTotal - b.grandTotal);
+
+            let html = `
+            <div class="leaderboard-box">
+                <div class="leaderboard-header">
+                    🏆 Aktuelle Rangliste
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-rank">Rang</th>
+                            <th class="col-player">Spieler</th>
+                            <th>Passe 1</th>
+                            <th>Passe 2</th>
+                            <th>Passe 3</th>
+                            <th>Passe 4</th>
+                            <th class="col-lb-total">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            playerStats.forEach((stat, index) => {
+                let rankText = `${index + 1}. Rang`;
+                html += `
+                    <tr>
+                        <td class="col-rank">${rankText}</td>
+                        <td class="col-player">${stat.name}</td>
+                        <td>${stat.passeTotals[0]}</td>
+                        <td>${stat.passeTotals[1]}</td>
+                        <td>${stat.passeTotals[2]}</td>
+                        <td>${stat.passeTotals[3]}</td>
+                        <td class="col-lb-total">${stat.grandTotal}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table></div>`;
             container.innerHTML = html;
         }
     </script>

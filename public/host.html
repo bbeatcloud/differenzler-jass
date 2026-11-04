@@ -210,7 +210,7 @@
                                     <strong style="font-size: 14px; color: #14532d;">${dateStr}</strong><br>
                                     <span style="font-size: 12px; color: #4b5563;">Spieler: ${playerNames}</span>
                                 </div>
-                                <button class="btn btn-green" style="padding: 6px 12px; font-size: 12px;" onclick="loadGraph('${g._id}')">Laden</button>
+                                <button class="btn btn-green" style="padding: 6px 12px; font-size: 12px;" onclick="loadGame('${g._id}')">Laden</button>
                             </div>
                         `;
                     });
@@ -308,7 +308,6 @@
                         let isCellActive = (currentGameState.currentPasse === p && currentGameState.currentSpiel === s);
                         let cellClass = isCellActive ? 'highlight-cell' : '';
 
-                        // Stile explizit unterschieden: OK wird grün/fett, Zahlen werden schwarz/fett/grösser
                         let estStyle = isSubmittedOnly 
                             ? "font-size: 16px; color: #166534; font-weight: 900;" 
                             : "font-size: 16px; color: #000000; font-weight: bold;";
@@ -323,18 +322,30 @@
                     html += `<td class="col-total" style="font-size: 17px; color: #000000; font-weight: 900;">${totalDiffPasse}</td></tr>`;
                 });
 
-                html += `<tr class="bg-sum"><td class="col-player">Total Punkte (157)</td>`;
+                // Summenzeile: Getrennte Summen für Ansage (Gesch.) und tatsächliches Spiel pro Spalte
+                html += `<tr class="bg-sum"><td class="col-player" style="font-size: 12px;">Total (Gesch. / Spiel)</td>`;
                 for (let s = 1; s <= 4; s++) {
+                    let sumEst = 0;
+                    let countEst = 0;
                     let sumAct = 0;
-                    let count = 0;
+                    let countAct = 0;
+
                     positions.forEach(pos => {
+                        let est = currentGameState.matrix[p][s].estimates[pos];
+                        if (est !== null) {
+                            sumEst += est;
+                            countEst++;
+                        }
                         let act = currentGameState.matrix[p][s].actual[pos];
                         if (act !== null) {
                             sumAct += act;
-                            count++;
+                            countAct++;
                         }
                     });
-                    html += `<td colspan="3" style="text-align: center; font-weight: bold; color: ${sumAct === 157 ? '#166534' : '#b91c1c'};">${count > 0 ? sumAct : '-'}</td>`;
+
+                    html += `<td style="text-align: center; font-size: 14px; font-weight: bold; color: #1e3a8a;">${countEst > 0 ? sumEst : '-'}</td>`;
+                    html += `<td style="text-align: center; font-size: 14px; font-weight: bold; color: ${sumAct === 157 ? '#166534' : '#b91c1c'};">${countAct > 0 ? sumAct : '-'}</td>`;
+                    html += `<td style="text-align: center;">-</td>`;
                 }
                 html += `<td></td></tr>`;
 

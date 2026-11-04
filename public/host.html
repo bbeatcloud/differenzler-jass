@@ -315,15 +315,15 @@
                         html += `
                             <td class="${cellClass}" style="${estStyle}">${estDisplay}</td>
                             <td class="${cellClass}" style="font-size: 16px; color: #000000; font-weight: bold;">${actDisplay}</td>
-                            <td class="${cellClass}" style="font-size: 19px; color: #000000; font-weight: 900;">${diffDisplay}</td>
+                            <td class="${cellClass}" style="font-size: 18px; color: #000000; font-weight: 900;">${diffDisplay}</td>
                         `;
                         if (diff !== null) totalDiffPasse += diff;
                     }
                     html += `<td class="col-total" style="font-size: 17px; color: #000000; font-weight: 900;">${totalDiffPasse}</td></tr>`;
                 });
 
-                // Summenzeile: Getrennte Summen für Ansage (Gesch.) und tatsächliches Spiel pro Spalte
-                html += `<tr class="bg-sum"><td class="col-player" style="font-size: 12px;">Total (Gesch. / Spiel)</td>`;
+                // Getrennte Summen für Ansage (Gesch.) und tatsächliches Spiel pro Spalte
+                html += `<tr class="bg-sum"><td class="col-player" style="font-size: 11px;">Total (Gesch. / Spiel)</td>`;
                 for (let s = 1; s <= 4; s++) {
                     let sumEst = 0;
                     let countEst = 0;
@@ -343,8 +343,8 @@
                         }
                     });
 
-                    html += `<td style="text-align: center; font-size: 14px; font-weight: bold; color: #1e3a8a;">${countEst > 0 ? sumEst : '-'}</td>`;
-                    html += `<td style="text-align: center; font-size: 14px; font-weight: bold; color: ${sumAct === 157 ? '#166534' : '#b91c1c'};">${countAct > 0 ? sumAct : '-'}</td>`;
+                    html += `<td style="text-align: center; font-size: 16px; font-weight: bold; color: #000000;">${countEst > 0 ? sumEst : '-'}</td>`;
+                    html += `<td style="text-align: center; font-size: 16px; font-weight: bold; color: ${sumAct === 157 ? '#166534' : '#b91c1c'};">${countAct > 0 ? sumAct : '-'}</td>`;
                     html += `<td style="text-align: center;">-</td>`;
                 }
                 html += `<td></td></tr>`;

@@ -210,7 +210,7 @@
                                     <strong style="font-size: 14px; color: #14532d;">${dateStr}</strong><br>
                                     <span style="font-size: 12px; color: #4b5563;">Spieler: ${playerNames}</span>
                                 </div>
-                                <button class="btn btn-green" style="padding: 6px 12px; font-size: 12px;" onclick="loadGame('${g._id}')">Laden</button>
+                                <button class="btn btn-green" style="padding: 6px 12px; font-size: 12px;" onclick="loadGraph('${g._id}')">Laden</button>
                             </div>
                         `;
                     });
@@ -300,16 +300,21 @@
                         let actDisplay = act !== null ? act : '';
                         let diffDisplay = diff !== null ? diff : '';
 
-                        if (est !== null && act === null) {
+                        let isSubmittedOnly = (est !== null && act === null);
+                        if (isSubmittedOnly) {
                             estDisplay = "OK";
                         }
 
                         let isCellActive = (currentGameState.currentPasse === p && currentGameState.currentSpiel === s);
                         let cellClass = isCellActive ? 'highlight-cell' : '';
 
-                        // Direkte Inline-Styles garantiert ohne Cache-Probleme
+                        // Stile explizit unterschieden: OK wird grün/fett, Zahlen werden schwarz/fett/grösser
+                        let estStyle = isSubmittedOnly 
+                            ? "font-size: 16px; color: #166534; font-weight: 900;" 
+                            : "font-size: 16px; color: #000000; font-weight: bold;";
+
                         html += `
-                            <td class="${cellClass}" style="font-size: 16px; color: #000000; font-weight: bold;">${estDisplay}</td>
+                            <td class="${cellClass}" style="${estStyle}">${estDisplay}</td>
                             <td class="${cellClass}" style="font-size: 16px; color: #000000; font-weight: bold;">${actDisplay}</td>
                             <td class="${cellClass}" style="font-size: 19px; color: #000000; font-weight: 900;">${diffDisplay}</td>
                         `;

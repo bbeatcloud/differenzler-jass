@@ -41,15 +41,10 @@
         th, td { border: 1px solid #e5e7eb; padding: 8px; }
         th { background: #111827; color: white; font-weight: bold; }
         .col-player { text-align: left; padding-left: 12px; font-weight: bold; width: 15%; background: #f9fafb; }
-        .col-total { font-weight: 900; background: #f3f4f6; }
+        .col-total { font-weight: 900; background: #f3f4f6; color: #000; font-size: 16px; }
         .bg-spiel-th { background: #1e293b; }
         .bg-sum { background: #dcfce7; font-weight: 900; }
         .highlight-cell { background-color: #fef9c3; font-weight: bold; }
-
-        /* SCHRIFT-ANPASSUNGEN FÜR GESCH., SPIEL UND DIFF. */
-        .cell-gesch { font-size: 15px; color: #1f2937; font-weight: 600; }
-        .cell-spiel { font-size: 15px; color: #1f2937; font-weight: 600; }
-        .cell-diff { font-size: 16px; color: #000000; font-weight: 900; }
 
         /* RANGLISTE DESIGN */
         .leaderboard-box { margin-top: 30px; border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; }
@@ -312,14 +307,15 @@
                         let isCellActive = (currentGameState.currentPasse === p && currentGameState.currentSpiel === s);
                         let cellClass = isCellActive ? 'highlight-cell' : '';
 
+                        // Direkte Inline-Styles garantiert ohne Cache-Probleme
                         html += `
-                            <td class="${cellClass} cell-gesch">${estDisplay}</td>
-                            <td class="${cellClass} cell-spiel">${actDisplay}</td>
-                            <td class="${cellClass} cell-diff">${diffDisplay}</td>
+                            <td class="${cellClass}" style="font-size: 16px; color: #000000; font-weight: bold;">${estDisplay}</td>
+                            <td class="${cellClass}" style="font-size: 16px; color: #000000; font-weight: bold;">${actDisplay}</td>
+                            <td class="${cellClass}" style="font-size: 19px; color: #000000; font-weight: 900;">${diffDisplay}</td>
                         `;
                         if (diff !== null) totalDiffPasse += diff;
                     }
-                    html += `<td class="col-total">${totalDiffPasse}</td></tr>`;
+                    html += `<td class="col-total" style="font-size: 17px; color: #000000; font-weight: 900;">${totalDiffPasse}</td></tr>`;
                 });
 
                 html += `<tr class="bg-sum"><td class="col-player">Total Punkte (157)</td>`;
@@ -333,7 +329,7 @@
                             count++;
                         }
                     });
-                    html += `<td colspan="3" style="text-align: center; color: ${sumAct === 157 ? '#166534' : '#b91c1c'};">${count > 0 ? sumAct : '-'}</td>`;
+                    html += `<td colspan="3" style="text-align: center; font-weight: bold; color: ${sumAct === 157 ? '#166534' : '#b91c1c'};">${count > 0 ? sumAct : '-'}</td>`;
                 }
                 html += `<td></td></tr>`;
 

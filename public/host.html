@@ -46,6 +46,11 @@
         .bg-sum { background: #dcfce7; font-weight: 900; }
         .highlight-cell { background-color: #fef9c3; font-weight: bold; }
 
+        /* SCHRIFT-ANPASSUNGEN FÜR GESCH., SPIEL UND DIFF. */
+        .cell-gesch { font-size: 15px; color: #1f2937; font-weight: 600; }
+        .cell-spiel { font-size: 15px; color: #1f2937; font-weight: 600; }
+        .cell-diff { font-size: 16px; color: #000000; font-weight: 900; }
+
         /* RANGLISTE DESIGN */
         .leaderboard-box { margin-top: 30px; border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; }
         .leaderboard-header { background: #fef08a; padding: 12px 18px; font-size: 18px; font-weight: 900; color: #854d0e; display: flex; align-items: center; gap: 8px; }
@@ -308,9 +313,9 @@
                         let cellClass = isCellActive ? 'highlight-cell' : '';
 
                         html += `
-                            <td class="${cellClass}">${estDisplay}</td>
-                            <td class="${cellClass}">${actDisplay}</td>
-                            <td class="${cellClass}">${diffDisplay}</td>
+                            <td class="${cellClass} cell-gesch">${estDisplay}</td>
+                            <td class="${cellClass} cell-spiel">${actDisplay}</td>
+                            <td class="${cellClass} cell-diff">${diffDisplay}</td>
                         `;
                         if (diff !== null) totalDiffPasse += diff;
                     }
@@ -367,7 +372,6 @@
                 return { pos, name, passeTotals, grandTotal };
             });
 
-            // Nach Gesamtdifferenz aufsteigend sortieren (weniger Differenz = bester Rang)
             playerStats.sort((a, b) => a.grandTotal - b.grandTotal);
 
             let html = `

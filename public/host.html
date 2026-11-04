@@ -322,7 +322,7 @@
                     html += `<td class="col-total" style="font-size: 17px; color: #000000; font-weight: 900;">${totalDiffPasse}</td></tr>`;
                 });
 
-                // Getrennte Summen für Ansage (Gesch.) und tatsächliches Spiel pro Spalte
+                // Summenzeile: Gesch. (Ansagen-Summe) wird erst angezeigt, wenn alle 4 Spieler ihre Punkte (Spiel) eingegeben haben!
                 html += `<tr class="bg-sum"><td class="col-player" style="font-size: 11px;">Total (Gesch. / Spiel)</td>`;
                 for (let s = 1; s <= 4; s++) {
                     let sumEst = 0;
@@ -343,7 +343,11 @@
                         }
                     });
 
-                    html += `<td style="text-align: center; font-size: 16px; font-weight: bold; color: #000000;">${countEst > 0 ? sumEst : '-'}</td>`;
+                    // Die Ansagen-Summe (Gesch.) nur anzeigen, wenn alle 4 Spieler ihre Punkte (Spiel) eingetragen haben (countAct === 4)
+                    let showEstSum = (countAct === 4);
+                    let displayEst = showEstSum ? sumEst : '-';
+
+                    html += `<td style="text-align: center; font-size: 16px; font-weight: bold; color: ${showEstSum ? '#000000' : '#b91c1c'};">${displayEst}</td>`;
                     html += `<td style="text-align: center; font-size: 16px; font-weight: bold; color: ${sumAct === 157 ? '#166534' : '#b91c1c'};">${countAct > 0 ? sumAct : '-'}</td>`;
                     html += `<td style="text-align: center;">-</td>`;
                 }

@@ -9,7 +9,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// JSON Parsing für API Endpunkte aktivieren
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -38,12 +37,11 @@ const gameRecordSchema = new mongoose.Schema({
 
 const GameRecord = mongoose.model('GameRecord', gameRecordSchema);
 
-// --- API ENDPUNKTE FÜR DIE HISTORIE & CONFIG ---
+// --- API ENDPUNKTE ---
 app.get('/host', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'host.html'));
 });
 
-// Passwort prüfen
 app.post('/api/host/login', (req, res) => {
     const { password } = req.body;
     if (password === HOST_PASSWORD) {
@@ -53,7 +51,6 @@ app.post('/api/host/login', (req, res) => {
     }
 });
 
-// Einstellungen aktualisieren
 app.post('/api/host/settings', (req, res) => {
     const { currentPassword, newPassword, newRoomCode } = req.body;
     
@@ -80,9 +77,11 @@ app.post('/api/host/settings', (req, res) => {
     res.json({ success: true, message: 'Einstellungen erfolgreich aktualisiert!', roomCode: ROOM_CODE });
 });
 
-// Spielstand manuell oder automatisch in MongoDB speichern
 app.post('/api/games/save', async (req, res) => {
     try {
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(400).json({ success: false, error: 'Datenbank ist nicht verbunden (MONGO_URI prüfen).' });
+        }
         const record = new GameRecord({
             roomCode: ROOM_CODE,
             players: players,
@@ -92,24 +91,29 @@ app.post('/api/games/save', async (req, res) => {
         res.json({ success: true, message: 'Spielstand erfolgreich in MongoDB gespeichert!' });
     } catch (err) {
         console.error('Fehler beim Speichern in MongoDB:', err);
-        res.status(500).json({ success: false, error: 'Speichern fehlgeschlagen' });
+        res.status(500).json({ success: false, error: 'Speichern fehlgeschlagen: ' + err.message });
     }
 });
 
-// Die letzten gespielten Partien auslesen (Einfach & sauber, ohne Duplikate)
 app.get('/api/games/history', async (req, res) => {
     try {
+        if (mongoose.connection.readyState !== 1) {
+            console.warn('⚠️ Versuch Historie zu laden, aber MongoDB ist nicht verbunden.');
+            return res.status(400).json({ success: false, error: 'Datenbank nicht verbunden. MONGO_URI in Render prüfen!' });
+        }
         const games = await GameRecord.find().sort({ createdAt: -1 }).limit(20);
         res.json(games);
     } catch (err) {
         console.error('Fehler beim Abrufen der Historie:', err);
-        res.status(500).json({ success: false, error: 'Historie konnte nicht geladen werden' });
+        res.status(500).json({ success: false, error: 'Historie konnte nicht geladen werden: ' + err.message });
     }
 });
 
-// Einen spezifischen Spielstand aus der Historie laden und wiederherstellen
 app.post('/api/games/load/:id', async (req, res) => {
     try {
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(400).json({ success: false, error: 'Datenbank ist nicht verbunden.' });
+        }
         const gameId = req.params.id;
         const record = await GameRecord.findById(gameId);
         
@@ -130,7 +134,7 @@ app.post('/api/games/load/:id', async (req, res) => {
     }
 });
 
-// --- SPIEL-STATUS & VARIABLEN ---
+// --- SPIEL-STATUS ---
 let hostState = "Frei"; 
 let players = {}; 
 
@@ -253,142 +257,4 @@ io.on('connection', (socket) => {
 
     socket.on('reset_table', () => {
         players = {};
-        gameState = createInitialGameState();
-        io.emit('players_updated', players);
-        io.emit('game_state_updated', gameState);
-    });
-
-    socket.on('toggle_host', (state) => {
-        hostState = state;
-        io.emit('host_state_changed', hostState);
-    });
-
-    socket.on('submit_estimate', ({ estimate }) => {
-        if (hostState === "Sperren") return;
-        const player = getPlayerBySocket(socket.id);
-        if (!player) return;
-
-        const p = gameState.currentPasse;
-        const s = gameState.currentSpiel;
-        const pos = player.position;
-
-        const parsedEst = parseInt(estimate);
-        if (isNaN(parsedEst) || parsedEst < 0 || parsedEst > 157) return;
-
-        gameState.matrix[p][s].estimates[pos] = parsedEst;
-        gameState.matrix[p][s].hidden[pos] = true;
-        writeLog(player.name, p, s, "Gesch.", parsedEst);
-
-        io.emit('game_state_updated', gameState);
-    });
-
-    socket.on('submit_actual', ({ actual, cards }) => {
-        if (hostState === "Sperren") return;
-        const player = getPlayerBySocket(socket.id);
-        if (!player) return;
-
-        const p = gameState.currentPasse;
-        const s = gameState.currentSpiel;
-        const pos = player.position;
-
-        const parsedActual = parseInt(actual);
-        if (isNaN(parsedActual) || parsedActual < 0 || parsedActual > 157) {
-            return socket.emit('error_msg', 'Ungültige Punktzahl!');
-        }
-
-        let tempSum = parsedActual;
-        for (let otherPos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) {
-            if (otherPos !== pos && gameState.matrix[p][s].actual[otherPos] !== null) {
-                tempSum += gameState.matrix[p][s].actual[otherPos];
-            }
-        }
-
-        if (tempSum > 157) {
-            return socket.emit('error_msg', `Fehler: Die Gesamtsumme darf 157 nicht überschreiten! (Aktuell: ${tempSum})`);
-        }
-
-        const cardLimits = { puur: 1, nell: 1, ass: 4, koenig: 4, dame: 4, bube: 3, zehn: 4, letzter: 1 };
-        
-        for (let cardKey in cardLimits) {
-            let usedByOthers = 0;
-            for (let otherPos of ['Spieler1', 'Spieler2', 'Spieler3', 'Spieler4']) {
-                if (otherPos !== pos) {
-                    usedByOthers += gameState.matrix[p][s].cards[otherPos][cardKey] || 0;
-                }
-            }
-            let requested = parseInt(cards[cardKey]) || 0;
-            if (usedByOthers + requested > cardLimits[cardKey]) {
-                return socket.emit('error_msg', `Fehler: Die Karte '${cardKey}' wurde insgesamt zu oft vergeben!`);
-            }
-        }
-
-        gameState.matrix[p][s].cards[pos] = cards;
-        gameState.matrix[p][s].actual[pos] = parsedActual;
-        writeLog(player.name, p, s, "Spiel.", parsedActual);
-
-        const est = gameState.matrix[p][s].estimates[pos] !== null ? gameState.matrix[p][s].estimates[pos] : 0;
-        const diff = Math.abs(est - parsedActual);
-        gameState.matrix[p][s].diff[pos] = diff;
-        writeLog(player.name, p, s, "Diff.", diff);
-
-        gameState.matrix[p][s].hidden[pos] = false;
-
-        let count = 0;
-        let sumAct = 0;
-        for(let k of ['Spieler1','Spieler2','Spieler3','Spieler4']) {
-            if(gameState.matrix[p][s].actual[k] !== null) {
-                count++;
-                sumAct += gameState.matrix[p][s].actual[k];
-            }
-        }
-
-        if (count === 4 && sumAct === 157) {
-            if (s === 4) {
-                for (let token in players) {
-                    let pl = players[token];
-                    let totalDiffPasse = 0;
-                    for(let i=1; i<=4; i++) totalDiffPasse += gameState.matrix[p][i].diff[pl.position] || 0;
-                    writeLog(pl.name, p, "Gesamt", "Diff.", totalDiffPasse);
-                }
-
-                if (MONGO_URI) {
-                    new GameRecord({ roomCode: ROOM_CODE, players, gameState }).save()
-                        .then(() => console.log('☁️ Passe automatisch in MongoDB gespeichert.'))
-                        .catch(e => console.error('Fehler beim Autosave:', e));
-                }
-            }
-
-            if (gameState.currentSpiel < 4) {
-                gameState.currentSpiel++;
-            } else if (gameState.currentPasse < 4) {
-                gameState.currentPasse++;
-                gameState.currentSpiel = 1;
-            }
-        }
-
-        io.emit('game_state_updated', gameState);
-    });
-
-    socket.on('next_step', () => {
-        if (gameState.currentSpiel < 4) {
-            gameState.currentSpiel++;
-        } else if (gameState.currentPasse < 4) {
-            gameState.currentPasse++;
-            gameState.currentSpiel = 1;
-        }
-        io.emit('game_state_updated', gameState);
-    });
-
-    socket.on('disconnect', () => {
-        for (let token in players) {
-            if (players[token].socketId === socket.id) {
-                players[token].socketId = null; 
-            }
-        }
-        io.emit('players_updated', players);
-    });
-});
-
-server.listen(PORT, '0.0.0.0', () => { 
-    console.log(`Server läuft auf Port ${PORT}`); 
-});
+        gameState = createInitial
